@@ -9,7 +9,7 @@ class AwsS3Service:
         self.bucket_name = settings.AWS_S3_BUCKET_NAME
         self.aws_access_key = settings.AWS_ACCESS_KEY_ID
         self.aws_secret_key = settings.AWS_SECRET_ACCESS_KEY
-        self.region_name = "ap-southeast-1"  # Thay đổi nếu cần
+        self.region_name = "ap-southeast-1"
         self.bucket_url = f"https://{self.bucket_name}.s3.amazonaws.com/"
 
         # Khởi tạo client S3

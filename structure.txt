@@ -1,5 +1,5 @@
-apiapi/
-│── apiapi/         # Thư mục chính của project
+Sportify_Server/
+│── Sportify_Server/         # Thư mục chính của project
 │   │── __init__.py    
 │   │── settings.py    # Cấu hình toàn bộ project Django
 │   │── urls.py        # Khai báo các đường dẫn (routes)

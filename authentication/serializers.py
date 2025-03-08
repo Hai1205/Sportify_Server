@@ -1,17 +1,18 @@
 from rest_framework import serializers
-from users.models import CustomUser
+from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.serializers import UserSerializer
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'password')
+        model = User
+        # fields = ('id', 'username', 'email', 'password')
+        fields = '__all__'
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         password = validated_data.pop("password")  # Lấy password ra khỏi validated_data
-        user = CustomUser(**validated_data)  # Tạo user nhưng chưa có password
+        user = User(**validated_data)  # Tạo user nhưng chưa có password
         user.set_password(password)  # Mã hóa password
         user.is_staff = False  # Chặn client tự cấp quyền admin
         user.save()  # Lưu user vào database
@@ -20,13 +21,14 @@ class RegisterSerializer(serializers.ModelSerializer):
     
 class RegisterAdminSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'password', 'is_staff')
+        model = User
+        # fields = ('id', 'username', 'email', 'password', 'is_staff')
+        fields = '__all__'
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        user = CustomUser(**validated_data)
+        user = User(**validated_data)
         user.is_staff = True
         user.set_password(password)
         user.save()
@@ -42,8 +44,8 @@ class LoginSerializer(serializers.Serializer):
 
         # Kiểm tra xem người dùng có tồn tại không
         try:
-            user = CustomUser.objects.get(username=username)
-        except CustomUser.DoesNotExist:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
             raise serializers.ValidationError("Sai tên đăng nhập hoặc mật khẩu.")
 
         # Kiểm tra mật khẩu

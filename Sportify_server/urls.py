@@ -19,12 +19,12 @@ from django.urls import path, include
 from .views import HomeView
 
 urlpatterns = [
-    path('home/', HomeView.as_view(), name='home'),
     path('admin/', admin.site.urls),
+    path('home/', HomeView.as_view(), name='home'),
     path('api/auth/', include('authentication.urls')), 
     path('api/users/', include('users.urls')), 
     path('api/albums/', include('albums.urls')), 
     path('api/songs/', include('songs.urls')), 
+    path('api/messages/', include('chats.urls')), 
+    path('api/stats/', include('stats.urls')), 
 ]
-
-

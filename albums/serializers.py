@@ -12,4 +12,4 @@ class GetAllSongByAlbumIdSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ('id', 'title', 'description', 'thumbnailUrl', 'created_at', 'songs')
+        fields = '__all__'
