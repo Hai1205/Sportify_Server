@@ -2,6 +2,7 @@ from rest_framework import serializers
 from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.serializers import UserSerializer
+from django.shortcuts import get_object_or_404
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,6 +33,7 @@ class RegisterAdminSerializer(serializers.ModelSerializer):
         user.is_staff = True
         user.set_password(password)
         user.save()
+      
         return user  
     
 class LoginSerializer(serializers.Serializer):
@@ -39,26 +41,29 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        username = data.get("username")
-        password = data.get("password")
 
-        # Kiểm tra xem người dùng có tồn tại không
         try:
-            user = User.objects.get(username=username)
+            username = data.get("username")
+            password = data.get("password")
+            
+            if "@" in username:
+                user = get_object_or_404(User, email=username)
+            else:
+                user = get_object_or_404(User, username=username)
+           
+            # Kiểm tra mật khẩu
+            if not user.check_password(password):
+                raise serializers.ValidationError("Username or password is incorrect.")
+
+            if user.status == 'locked':
+                raise serializers.ValidationError("Account is locked.")
+
+            # Tạo token JWT
+            refresh = RefreshToken.for_user(user)
+            return {
+                "refresh_token": str(refresh),
+                "access_token": str(refresh.access_token),
+                "user": UserSerializer(user).data,
+            }
         except User.DoesNotExist:
-            raise serializers.ValidationError("Sai tên đăng nhập hoặc mật khẩu.")
-
-        # Kiểm tra mật khẩu
-        if not user.check_password(password):
-            raise serializers.ValidationError("Sai tên đăng nhập hoặc mật khẩu.")
-
-        if not user.is_active:
-            raise serializers.ValidationError("Tài khoản này đã bị vô hiệu hóa.")
-
-        # Tạo token JWT
-        refresh = RefreshToken.for_user(user)
-        return {
-            "refresh_token": str(refresh),
-            "access_token": str(refresh.access_token),
-            "user": UserSerializer(user).data,
-        }
+            raise serializers.ValidationError("Username or password is incorrect.")

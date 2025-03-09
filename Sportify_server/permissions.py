@@ -1,14 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-class HasAnyPermission(BasePermission):
-    """Cho phép truy cập nếu user có ít nhất một trong các quyền"""
-    
-    def __init__(self, *perms):
-        self.perms = perms
-
-    def has_permission(self, request, view):
-        return any(perm().has_permission(request, view) for perm in self.perms)
-
 class IsArtistUser(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:

@@ -44,7 +44,8 @@ class AwsS3Service:
                 file,
                 self.bucket_name,
                 s3_file_name,
-                ExtraArgs={"ContentType": content_type, "ACL": "public-read"},
+                # ExtraArgs={"ContentType": content_type, "ACL": "public-read"},
+                ExtraArgs={"ContentType": content_type},
             )
 
             return f"{self.bucket_url}{s3_file_name}"

@@ -16,13 +16,20 @@ class RegisterView(GenericAPIView):
                 user = serializer.save()
                 
                 return JsonResponse({
-                    "message": "Register successfully",
-                    "user": UserSerializer(user).data
-                }, status=200)
+                    "status": 200,
+                    "message": "Register user successfully",
+                    "data": {"user": UserSerializer(user).data}
+                }, safe=False, status=200)
             
-            return JsonResponse(serializer.errors, status=400)
+            return JsonResponse({
+                    "status": 400,
+                    "message": str(serializer.errors)
+                }, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class RegisterAdminView(GenericAPIView):
     permission_classes = [IsAdminUser] 
@@ -35,12 +42,18 @@ class RegisterAdminView(GenericAPIView):
                 
                 return Response({
                     "message": "Register admin successfully",
-                    "user": UserSerializer(user).data
-                }, status=200)
+                    "data": {"user": UserSerializer(user).data}
+                }, safe=False, status=200)
             
-            return Response(serializer.errors, status=400)
+            return JsonResponse({
+                    "status": 400,
+                    "message": str(serializer.errors)
+                }, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class LoginView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -52,9 +65,10 @@ class LoginView(GenericAPIView):
                 data = serializer.validated_data
                 
                 response = Response({
-                    "message": "Login successfully",
-                    "user": data["user"]
-                }, status=200)
+                    "status": 200,
+                    "message": "Login user successfully",
+                    "data": {"user": data["user"]}
+                }, safe=False, status=200)
 
                 # Lưu token vào cookies với HttpOnly
                 response.set_cookie(
@@ -75,16 +89,23 @@ class LoginView(GenericAPIView):
 
                 return response
             
-            return Response(serializer.errors, status=400)
+            return JsonResponse({
+                    "status": 400,
+                    "message": str(serializer.errors)
+                }, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
     
 class LogoutView(GenericAPIView):
     def post(self, request):
         try:
             response = Response({
-                "message": "Logged out successfully"
+                "status": 200,
+                "message": "Logout user successfully"
             }, status=200)
 
             # Xóa token khỏi cookies
@@ -93,7 +114,10 @@ class LogoutView(GenericAPIView):
 
             return response
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class TokenRefreshView(GenericAPIView):
     def post(self, request):
@@ -101,13 +125,19 @@ class TokenRefreshView(GenericAPIView):
             refresh_token = request.COOKIES.get("refresh_token")
 
             if not refresh_token:
-                return Response({"error": "Refresh token not found"}, status=403)
+                return JsonResponse({
+                    "status": 403,
+                    "message": "Refresh token not found"
+                    }, status=403)
 
             refresh = RefreshToken(refresh_token)
             
             access_token = str(refresh.access_token)
 
-            response = Response({"message": "Access token has been refresh"}, status=200)
+            response = Response({
+                "status": 200,
+                "message": "Access token has been refresh"
+            }, status=200)
             
             response.set_cookie(
                 key="access_token",
@@ -118,8 +148,11 @@ class TokenRefreshView(GenericAPIView):
             )
 
             return response
-        except Exception:
-            return Response({"error": "Refresh token is invalid"}, status=403)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class CheckAdmin(GenericAPIView):
     permission_classes = [IsAdminUser]
@@ -127,7 +160,12 @@ class CheckAdmin(GenericAPIView):
     def post(self, request):
         try:
             return JsonResponse({
-                "isAdmin": True
-            }, status=200)
+                "status": 200,
+                "message": "You are admin",
+                "data": {"isAdmin": True}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

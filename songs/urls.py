@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GetAllSongView, AddSongView, GetFeaturedView, GetMadeForYouView, GetTrendingView, GetSongByIdView, DeleteSongByIdView
+from .views import GetAllSongView, AddSongView, GetFeaturedView, GetMadeForYouView, GetTrendingView, GetSongView, DeleteSongView
 
 urlpatterns = [
     path('', GetAllSongView.as_view(), name='get-all-song'),
@@ -7,6 +7,6 @@ urlpatterns = [
     path('get-featured/', GetFeaturedView.as_view(), name='get-featured'),
     path('made-for-you/', GetMadeForYouView.as_view(), name='made-for-you'),
     path('trending/', GetTrendingView.as_view(), name='trending'),
-    path('get-song-by-id/<uuid:songId>/', GetSongByIdView.as_view(), name='get-song-by-id'),
-    path('delete-song-by-id/<uuid:songId>/', DeleteSongByIdView.as_view(), name='delete-song-by-id'),
+    path('get-song/<uuid:songId>/', GetSongView.as_view(), name='get-song'),
+    path('delete-song/<uuid:songId>/', DeleteSongView.as_view(), name='delete-song'),
 ]

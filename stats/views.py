@@ -10,22 +10,29 @@ class GetStatsView(GenericAPIView):
 
     def get(self, request):
         try:
-            total_songs = Song.objects.count()
-            total_albums = Album.objects.count()
-            total_users = User.objects.count()
+            totalSongs = Song.objects.count()
+            totalAlbums = Album.objects.count()
+            totalUsers = User.objects.count()
 
             # Lấy danh sách các artist duy nhất từ cả Song và Album
-            unique_artists = (
-                Song.objects.values_list("artist", flat=True).distinct()
+            uniqueArtists = (
+                Song.objects.values_list("userId", flat=True).distinct()
             ).union(
-                Album.objects.values_list("artist", flat=True).distinct()
+                Album.objects.values_list("userId", flat=True).distinct()
             ).count()
 
             return JsonResponse({
-                "totalAlbums": total_albums,
-                "totalSongs": total_songs,
-                "totalUsers": total_users,
-                "totalArtists": unique_artists
-            })
+                "status": 200,
+                "message": "Get statistics successfully",
+                "data": {
+                    "totalAlbums": totalAlbums,
+                    "totalSongs": totalSongs,
+                    "totalUsers": totalUsers,
+                    "totalArtists": uniqueArtists
+                }
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

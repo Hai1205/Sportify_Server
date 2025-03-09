@@ -1,5 +1,5 @@
 from rest_framework.permissions import IsAdminUser
-from .serializers import UserSerializer, UpdateUserSerializer, UpdateUserToArtistSerializer, UserWithSongsSerializer
+from .serializers import UserSerializer, UpdateUserSerializer, ResponseUpdateUserToArtistSerializer, UserWithSongsSerializer, RequireUpdateUserToArtistSerializer
 from .models import User
 from rest_framework.generics import GenericAPIView
 from django.shortcuts import get_object_or_404
@@ -13,9 +13,16 @@ class GetAllUserView(GenericAPIView):
             users = User.objects.all()
             serializer = UserSerializer(users, many=True)
         
-            return JsonResponse(serializer.data, status=200)
+            return JsonResponse({
+                "status": 200,
+                "message": "Get all user successfully",
+                "data": {"users": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class GetUserView(GenericAPIView):
     def get(self, request, userId):
@@ -23,9 +30,16 @@ class GetUserView(GenericAPIView):
             user = get_object_or_404(User, id=userId)
             serializer = UserSerializer(user)
         
-            return JsonResponse(serializer.data, status=200)
+            return JsonResponse({
+                "status": 200,
+                "message": "Get user successfully",
+                "data": {"users": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class UpdateUserView(GenericAPIView):
     def put(self, request, userId):
@@ -36,45 +50,107 @@ class UpdateUserView(GenericAPIView):
             if serializer.is_valid():
                 serializer.save()
 
-                return JsonResponse(serializer.data, status=200)
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Updated user successfully",
+                    "data": {"users": serializer.data}
+                }, safe=False, status=200)
             
-            return JsonResponse(serializer.errors, status=400)
+            return JsonResponse({
+                "status": 400,
+                "message": {serializer.errors}
+            }, safe=False, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class DeleteUserView(GenericAPIView):
+    permission_classes = [IsAdminUser]
+    
     def delete(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)
             user.delete()
         
-            return JsonResponse({"message": "Deleted successfully"}, status=200)
+            return JsonResponse({
+                    "status": 200,
+                    "message": "Deleted user successfully",
+            }, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class GetUserSongView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)
             serializer = UserWithSongsSerializer(user, many=True)
         
-            return JsonResponse(serializer.data, status=200)
+            return JsonResponse({
+                "status": 200,
+                "message": "Updated user successfully",
+                "data": {"user": serializer.data}
+            }, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
-class UpdateUserToArtistView(GenericAPIView):
+class RequireUpdateUserToArtistView(GenericAPIView):
     def put(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)
-            serializer = UpdateUserToArtistSerializer(user)
+            serializer = RequireUpdateUserToArtistSerializer(user, data=request.data)
         
             if serializer.is_valid():
                 serializer.save()
 
-                return JsonResponse(serializer.data, status=200)
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Required update user to artist successfully",
+                    # "data": {"user": serializer.data}
+                }, status=200)
             
-            return JsonResponse(serializer.errors, status=400)
+            return JsonResponse({
+                "status": 400,
+                "message": {serializer.errors}
+            }, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+        
+class ResponseUpdateUserToArtist(GenericAPIView):
+    permission_classes = [IsAdminUser]
+    
+    def put(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            serializer = ResponseUpdateUserToArtistSerializer(user, data=request.data)
+        
+            if serializer.is_valid():
+                serializer.save()
+
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Responsed update user to artist successfully",
+                    # "data": {"user": serializer.data}
+                }, status=200)
+            
+            return JsonResponse({
+                "status": 400,
+                "message": {serializer.errors}
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

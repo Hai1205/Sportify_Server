@@ -5,7 +5,7 @@ from .models import Song
 from albums.models import Album
 from users.models import User
 from Sportify_Server.services import AwsS3Service
-from Sportify_Server.permissions import IsArtistUser, HasAnyPermission
+from Sportify_Server.permissions import IsArtistUser
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
@@ -14,33 +14,36 @@ class AddSongView(GenericAPIView):
 
     def post(self, request, userId, albumId):
         try:
-            if thumbnail is None or audioUrl is None:
-                return JsonResponse({"message": "Please upload thumbnail and audio"}, status=400)
+            # Kiểm tra id có tồn tại không
+            album = None
+            if albumId:
+                album = get_object_or_404(Album, id=albumId)
+            user = get_object_or_404(User, id=userId)
             
             # Lấy dữ liệu từ request
             title = request.data.get("title")
             # description = request.data.get("description")
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
-            duration = request.FILES.get("duration")
+            duration = int(request.data.get("duration"))
             
-            # Kiểm tra id có tồn tại không
-            album = None
-            if albumId:
-                album = get_object_or_404(Album, id=albumId)
-            get_object_or_404(User, id=userId)
-                
+            if thumbnail is None or audio is None:
+                return JsonResponse({
+                    "status": 400,
+                    "message": "Please upload thumbnail and audio"
+                }, status=400)
+            
             s3_service = AwsS3Service()
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             audioUrl = s3_service.save_file_to_s3(audio)
 
             # Tạo bài hát mới
             song = Song.objects.create(
-                userId=userId,
-                albumId=albumId or None,
+                userId=user,
+                albumId=album or None,
                 title=title,
                 # description=description,
-                thumbnail_url=thumbnailUrl,
+                thumbnailUrl=thumbnailUrl,
                 audioUrl=audioUrl,
                 duration=duration,
             )
@@ -52,7 +55,11 @@ class AddSongView(GenericAPIView):
             # Trả về response
             serializer = SongSerializer(song)
            
-            return JsonResponse({"message": "Song Added", "song": serializer.data}, safe=False, status=200)
+            return JsonResponse({
+                "songs": 200,
+                "message": "Added song successfully", 
+                "data": {"song": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
         
@@ -62,66 +69,108 @@ class GetAllSongView(GenericAPIView):
             songs = Song.objects.all()
             serializer = SongSerializer(songs, many=True)
         
-            return JsonResponse(serializer.data, safe=False, status=200)
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get all song successfully", 
+                "data": {"songs": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
-class GetSongByIdView(GenericAPIView):
+class GetSongView(GenericAPIView):
     def get(self, request, songId):
         try:
             song = get_object_or_404(Song, id=songId)
             serializer = SongSerializer(song)
         
-            return JsonResponse(serializer.data, safe=False, status=200) 
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get song successfully", 
+                "data": {"song": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
-class DeleteSongByIdView(GenericAPIView):
-    permission_classes = [HasAnyPermission(IsArtistUser, IsAdminUser)]
+class DeleteSongView(GenericAPIView):
+    permission_classes = [IsAdminUser | IsArtistUser ]
     
     def delete(self, request, songId):
         try:
             song = get_object_or_404(Song, id=songId)
-            album = get_object_or_404(Album, id=song.albumId)
-            
-            album.songs.remove(songId)
+           
+            albumId = song.albumId_id
+            album = get_object_or_404(Album, id=albumId)
+            album.songs.remove(str(songId))
             album.save()
     
             song.delete()
         
-            return JsonResponse({"message": "Deleted successfully"}, safe=False, status=200)
+            return JsonResponse({
+                "status": 200,
+                "message": "Deleted song successfully"
+            }, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class GetFeaturedView(GenericAPIView):
     def get(self, request):
         try:
-            random = 6
-            songs = Song.objects.order_by("?")[:random].values("id", "title", "userID", "imageUrl", "audioUrl")
+            element = 6
+            songs = Song.objects.order_by("?")[:element]
             serializer = SongSerializer(songs, many=True)
             
-            return JsonResponse(serializer.data, safe=False, status=200)
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get song featured songs successfully", 
+                "data": {"songs": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class GetTrendingView(GenericAPIView):
     def get(self, request):
         try:
-            random = 4
-            songs = Song.objects.order_by("?")[:random].values("id", "title", "userID", "imageUrl", "audioUrl")
+            element = 4
+            songs = Song.objects.order_by("?")[:element]
             serializer = SongSerializer(songs, many=True)
            
-            return JsonResponse(serializer.data, safe=False, status=200)
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get trending songs successfully", 
+                "data": {"songs": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
     
 class GetMadeForYouView(GenericAPIView):
     def get(self, request):
         try:
-            random = 4
-            songs = Song.objects.order_by("?")[:random].values("id", "title", "userID", "imageUrl", "audioUrl")
+            element = 4
+            songs = Song.objects.order_by("?")[:element]
             serializer = SongSerializer(songs, many=True)
           
-            return JsonResponse(serializer.data, safe=False, status=200)
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get made for you songs successfully", 
+                "data": {"songs": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

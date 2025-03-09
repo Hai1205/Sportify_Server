@@ -1,4 +1,3 @@
-from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
 from django.db.models import Q
@@ -13,9 +12,16 @@ class GetAllMessageView(GenericAPIView):
             messages = Message.objects.all()
             serializer = MessageSerializer(messages, many=True)
         
-            return Response(serializer.data)
+            return JsonResponse({
+                "status": 200,
+                "message": "Get all message successfully",
+                "data": {"Messages": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
 
 class getMessageView(GenericAPIView):
     def get(self, request, senderId, receiverId):
@@ -29,6 +35,13 @@ class getMessageView(GenericAPIView):
 
             serializer = MessageSerializer(messages, many=True)
             
-            return Response(serializer.data)
+            return JsonResponse({
+                "status": 200,
+                "message": "Get message successfully",
+                "data": {"Message": serializer.data}
+            }, safe=False, status=200)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

@@ -5,8 +5,8 @@ import uuid
 
 class Song(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False, blank=False)
-    userId = models.ForeignKey(User, on_delete=models.CASCADE, related_name="songs", default=uuid.uuid4, db_column="userId")
-    albumId = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="album_songs", default=uuid.uuid4, db_column="albumId")
+    userId = models.ForeignKey(User, on_delete=models.CASCADE, related_name="songs", db_column="userId")
+    albumId = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="album_songs", db_column="albumId")
     title = models.CharField(max_length=255, null=False, blank=False)
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()
