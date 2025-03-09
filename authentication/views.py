@@ -41,9 +41,10 @@ class RegisterAdminView(GenericAPIView):
                 user = serializer.save()
                 
                 return Response({
+                    "status": 200,
                     "message": "Register admin successfully",
                     "data": {"user": UserSerializer(user).data}
-                }, safe=False, status=200)
+                }, status=200)
             
             return JsonResponse({
                     "status": 400,
@@ -68,7 +69,7 @@ class LoginView(GenericAPIView):
                     "status": 200,
                     "message": "Login user successfully",
                     "data": {"user": data["user"]}
-                }, safe=False, status=200)
+                }, status=200)
 
                 # Lưu token vào cookies với HttpOnly
                 response.set_cookie(

@@ -33,7 +33,7 @@ class GetUserView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get user successfully",
-                "data": {"users": serializer.data}
+                "data": {"user": serializer.data}
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
