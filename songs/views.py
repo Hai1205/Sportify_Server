@@ -1,18 +1,19 @@
-from rest_framework.permissions import IsAdminUser
-from .serializers import SongSerializer
+from rest_framework.permissions import AllowAny, IsAdminUser
+from Sportify_Server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
+from Sportify_Server.services import AwsS3Service
+from .serializers import SongSerializer
 from .models import Song
 from albums.models import Album
 from users.models import User
-from Sportify_Server.services import AwsS3Service
-from Sportify_Server.permissions import IsArtistUser
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
-class AddSongView(GenericAPIView):
-    permission_classes = [IsArtistUser or IsAdminUser]
+class uploadSongView(GenericAPIView):
+    permission_classes = [ IsAdminUser or IsArtistUser]
 
     def post(self, request, userId, albumId):
+        # print(userId)
         try:
             # Kiểm tra id có tồn tại không
             album = None
@@ -49,7 +50,7 @@ class AddSongView(GenericAPIView):
             )
             
             if album:
-                album.songs.append(str(song.id))
+                album.songs.add(song)
                 album.save()
 
             # Trả về response
@@ -58,7 +59,7 @@ class AddSongView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Added song successfully", 
-                "data": {"song": serializer.data}
+                "song": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
@@ -72,7 +73,7 @@ class GetAllSongView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get all song successfully", 
-                "data": {"songs": serializer.data}
+                "songs": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -89,7 +90,7 @@ class GetSongView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get song successfully", 
-                "data": {"song": serializer.data}
+                "song": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -106,7 +107,7 @@ class DeleteSongView(GenericAPIView):
            
             albumId = song.albumId_id
             album = get_object_or_404(Album, id=albumId)
-            album.songs.remove(str(songId))
+            album.songs.remove(songId)
             album.save()
     
             song.delete()
@@ -122,6 +123,8 @@ class DeleteSongView(GenericAPIView):
             }, status=500)
     
 class GetFeaturedView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request):
         try:
             element = 6
@@ -131,7 +134,7 @@ class GetFeaturedView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get song featured songs successfully", 
-                "data": {"songs": serializer.data}
+                "songs": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -140,6 +143,8 @@ class GetFeaturedView(GenericAPIView):
             }, status=500)
     
 class GetTrendingView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request):
         try:
             element = 4
@@ -149,7 +154,7 @@ class GetTrendingView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get trending songs successfully", 
-                "data": {"songs": serializer.data}
+                "songs": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -158,6 +163,8 @@ class GetTrendingView(GenericAPIView):
             }, status=500)
     
 class GetMadeForYouView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request):
         try:
             element = 4
@@ -167,7 +174,7 @@ class GetMadeForYouView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get made for you songs successfully", 
-                "data": {"songs": serializer.data}
+                "songs": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

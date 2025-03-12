@@ -1,6 +1,7 @@
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
+# from albums.models import Album
 
 class User(AbstractUser):
     USER_ROLE_CHOICES = [
@@ -19,15 +20,12 @@ class User(AbstractUser):
     username = models.CharField(unique=True, max_length=10, null=False, blank=False)
     email = models.EmailField(unique=True, max_length=255, null=False, blank=False)
     password = models.CharField(max_length=255, null=False, blank=False)
-    fullName = models.CharField(max_length=255, null=False, blank=False, default='fullName')
+    fullName = models.CharField(max_length=255, null=False, blank=False, default=username)
     avatarUrl = models.URLField(default='avatar.com')
+    albums = models.ManyToManyField("albums.Album", default=uuid.uuid4, related_name="albums_users")
     role = models.CharField(max_length=10, choices=USER_ROLE_CHOICES, default='user')
     status = models.CharField(max_length=10, choices=USER_STATUS, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    # Override lại quan hệ groups và permissions
-    # groups = models.ManyToManyField(Group)
-    # user_permissions = models.ManyToManyField(Permission)
 
     class Meta:
         db_table = "users"

@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import User
-from songs.serializers import SongSerializer
-
 class UserSerializer(serializers.ModelSerializer):
+    albums = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    
     class Meta:
         model = User
         # fields = ['id', 'username', 'email', 'fullName', 'avatarUrl', 'role', 'created_at']
@@ -57,7 +57,9 @@ class RequireUpdateUserToArtistSerializer(serializers.ModelSerializer):
         return user
 
 class UserWithSongsSerializer(serializers.ModelSerializer):
-    songs = SongSerializer(many=True, read_only=True)
+    # from albums.serializers import AlbumSerializer
+    # albums = AlbumSerializer(many=True, read_only=True)
+    albums = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     
     class Meta:
         model = User

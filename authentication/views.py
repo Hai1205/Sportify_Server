@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
+from Sportify_Server.permissions import IsArtistUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, RegisterSerializer, RegisterAdminSerializer
 from users.serializers import UserSerializer
@@ -18,7 +19,7 @@ class RegisterView(GenericAPIView):
                 return JsonResponse({
                     "status": 200,
                     "message": "Register user successfully",
-                    "data": {"user": UserSerializer(user).data}
+                    "user": UserSerializer(user).data
                 }, safe=False, status=200)
             
             return JsonResponse({
@@ -43,7 +44,7 @@ class RegisterAdminView(GenericAPIView):
                 return Response({
                     "status": 200,
                     "message": "Register admin successfully",
-                    "data": {"user": UserSerializer(user).data}
+                    "user": UserSerializer(user).data
                 }, status=200)
             
             return JsonResponse({
@@ -68,7 +69,7 @@ class LoginView(GenericAPIView):
                 response = Response({
                     "status": 200,
                     "message": "Login user successfully",
-                    "data": {"user": data["user"]}
+                    "user": data["user"]
                 }, status=200)
 
                 # Lưu token vào cookies với HttpOnly
@@ -163,7 +164,23 @@ class CheckAdmin(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "You are admin",
-                "data": {"isAdmin": True}
+                "isAdmin": True
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class CheckArtist(GenericAPIView):
+    permission_classes = [IsArtistUser]
+    
+    def post(self, request):
+        try:
+            return JsonResponse({
+                "status": 200,
+                "message": "You are artist",
+                "isArtist": True
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

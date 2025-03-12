@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
 from .serializers import AlbumSerializer
 from rest_framework.generics import GenericAPIView
@@ -9,7 +9,7 @@ from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
-class CreateAlbumView(GenericAPIView):
+class UploadAlbumView(GenericAPIView):
     permission_classes = [IsAdminUser | IsArtistUser ]
 
     def post(self, request, userId):
@@ -18,7 +18,6 @@ class CreateAlbumView(GenericAPIView):
             
             title = request.data.get("title")
             releaseDate = request.data.get("releaseDate")
-            # description = request.data.get("description")
             thumbnail = request.FILES.get("thumbnail")
             
             if thumbnail is None:
@@ -31,17 +30,16 @@ class CreateAlbumView(GenericAPIView):
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             
             album = Album.objects.create(
-                userId=user,
+                user=user,
                 title=title,
                 releaseDate=releaseDate,
-                # description=description,
                 thumbnailUrl=thumbnailUrl
             )
             
             return JsonResponse({
                 "status": 200,
                 "message": "Created album successfully",
-                "data": {"album": AlbumSerializer(album).data}
+                "album": AlbumSerializer(album).data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -50,6 +48,8 @@ class CreateAlbumView(GenericAPIView):
             }, status=500)
     
 class GetAllAlbumView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request):
         try:
             songs = Album.objects.all()
@@ -58,7 +58,7 @@ class GetAllAlbumView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get all album successfully",
-                "data": {"albums": serializer.data}
+                "albums": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -67,6 +67,8 @@ class GetAllAlbumView(GenericAPIView):
             }, status=500)
     
 class GetAlbumView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request, albumId):
         try:
             album = get_object_or_404(Album, id=albumId)
@@ -75,7 +77,7 @@ class GetAlbumView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get album successfully",
-                "data": {"album": serializer.data}
+                "album": serializer.data
             }, safe=False, status=200)
         except Album.DoesNotExist:
             return JsonResponse({

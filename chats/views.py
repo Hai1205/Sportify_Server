@@ -15,7 +15,7 @@ class GetAllMessageView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get all message successfully",
-                "data": {"Messages": serializer.data}
+                "Messages": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -38,7 +38,7 @@ class getMessageView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get message successfully",
-                "data": {"Message": serializer.data}
+                "Message": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

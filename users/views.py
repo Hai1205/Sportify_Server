@@ -16,7 +16,7 @@ class GetAllUserView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get all user successfully",
-                "data": {"users": serializer.data}
+                "users": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -33,7 +33,7 @@ class GetUserView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get user successfully",
-                "data": {"user": serializer.data}
+                "user": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -53,7 +53,7 @@ class UpdateUserView(GenericAPIView):
                 return JsonResponse({
                     "status": 200,
                     "message": "Updated user successfully",
-                    "data": {"users": serializer.data}
+                    "users": serializer.data
                 }, safe=False, status=200)
             
             return JsonResponse({
@@ -84,7 +84,7 @@ class DeleteUserView(GenericAPIView):
                 "message": str(e)
             }, status=500)
 
-class GetUserSongView(GenericAPIView):
+class getAllUsersongView(GenericAPIView):
     # permission_classes = [IsAdminUser]
 
     def get(self, request, userId):
@@ -95,7 +95,7 @@ class GetUserSongView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Updated user successfully",
-                "data": {"user": serializer.data}
+                "user": serializer.data
             }, status=200)
         except Exception as e:
             return JsonResponse({
@@ -115,7 +115,7 @@ class RequireUpdateUserToArtistView(GenericAPIView):
                 return JsonResponse({
                     "status": 200,
                     "message": "Required update user to artist successfully",
-                    # "data": {"user": serializer.data}
+                    # "user": serializer.data
                 }, status=200)
             
             return JsonResponse({
@@ -128,7 +128,7 @@ class RequireUpdateUserToArtistView(GenericAPIView):
                 "message": str(e)
             }, status=500)
         
-class ResponseUpdateUserToArtist(GenericAPIView):
+class ResponseUpdateUserToArtistView(GenericAPIView):
     permission_classes = [IsAdminUser]
     
     def put(self, request, userId):
@@ -142,7 +142,7 @@ class ResponseUpdateUserToArtist(GenericAPIView):
                 return JsonResponse({
                     "status": 200,
                     "message": "Responsed update user to artist successfully",
-                    # "data": {"user": serializer.data}
+                    # "user": serializer.data
                 }, status=200)
             
             return JsonResponse({

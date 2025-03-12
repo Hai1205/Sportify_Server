@@ -1,15 +1,16 @@
 from django.db import models
-from users.models import User
+# from songs.models import Song
 import uuid
 from django.utils import timezone
+# from users.models import User
 
 class Album(models.Model):
+            
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    userId = models.ForeignKey(User, on_delete=models.CASCADE, related_name="albums", default=uuid.uuid4, db_column="userId")
-    songs = models.JSONField(default=list)
+    user = models.ForeignKey("users.User", default=uuid.uuid4, on_delete=models.CASCADE, related_name="user_albums")
+    songs = models.ManyToManyField("songs.Song", blank=True, related_name='songs_albums')
     title = models.CharField(max_length=255, null=False, blank=False)
     releaseDate = models.DateField(default=timezone.now, null=False, blank=False)
-    # description = models.CharField(max_length=255, null=False, blank=False)
     thumbnailUrl = models.URLField()
     created_at = models.DateTimeField(auto_now_add=True)
     
