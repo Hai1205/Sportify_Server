@@ -1,6 +1,6 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
-from .serializers import AlbumSerializer
+from .serializers import FullInfoAlbumSerializer
 from rest_framework.generics import GenericAPIView
 from .models import Album
 from songs.models import Song
@@ -36,10 +36,14 @@ class UploadAlbumView(GenericAPIView):
                 thumbnailUrl=thumbnailUrl
             )
             
+            if user:
+                user.albums.add(album)
+                user.save()
+            
             return JsonResponse({
                 "status": 200,
                 "message": "Created album successfully",
-                "album": AlbumSerializer(album).data
+                "album": FullInfoAlbumSerializer(album).data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -52,12 +56,31 @@ class GetAllAlbumView(GenericAPIView):
     
     def get(self, request):
         try:
-            songs = Album.objects.all()
-            serializer = AlbumSerializer(songs, many=True)
+            albums = Album.objects.all()
+            serializer = FullInfoAlbumSerializer(albums, many=True)
         
             return JsonResponse({
                 "status": 200,
                 "message": "Get all album successfully",
+                "albums": serializer.data
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetUserAlbums(GenericAPIView):
+    def get(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            albums = user.user_albums.all()
+            
+            serializer = FullInfoAlbumSerializer(albums, many=True)
+        
+            return JsonResponse({
+                "status": 200,
+                "message": "Get user albums successfully",
                 "albums": serializer.data
             }, safe=False, status=200)
         except Exception as e:
@@ -72,7 +95,7 @@ class GetAlbumView(GenericAPIView):
     def get(self, request, albumId):
         try:
             album = get_object_or_404(Album, id=albumId)
-            serializer = AlbumSerializer(album)
+            serializer = FullInfoAlbumSerializer(album)
         
             return JsonResponse({
                 "status": 200,
@@ -97,7 +120,7 @@ class DeleteAlbumView(GenericAPIView):
         try:
             album = get_object_or_404(Album, id=albumId)
             
-            Song.objects.filter(albumId=albumId).delete()
+            Song.objects.filter(album_id=albumId).delete()
             
             album.delete()
         

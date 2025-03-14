@@ -16,9 +16,9 @@ class GetStatsView(GenericAPIView):
 
             # Lấy danh sách các artist duy nhất từ cả Song và Album
             uniqueArtists = (
-                Song.objects.values_list("userId", flat=True).distinct()
+                Song.objects.values_list("user", flat=True).distinct()
             ).union(
-                Album.objects.values_list("userId", flat=True).distinct()
+                Album.objects.values_list("user", flat=True).distinct()
             ).count()
 
             return JsonResponse({

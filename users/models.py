@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
-# from albums.models import Album
 
 class User(AbstractUser):
     USER_ROLE_CHOICES = [
@@ -23,6 +22,8 @@ class User(AbstractUser):
     fullName = models.CharField(max_length=255, null=False, blank=False, default=username)
     avatarUrl = models.URLField(default='avatar.com')
     albums = models.ManyToManyField("albums.Album", default=uuid.uuid4, related_name="albums_users")
+    followers = models.ManyToManyField("self", blank=True, related_name='followers_users', symmetrical=False)
+    following = models.ManyToManyField("self", blank=True, related_name='following_users', symmetrical=False)
     role = models.CharField(max_length=10, choices=USER_ROLE_CHOICES, default='user')
     status = models.CharField(max_length=10, choices=USER_STATUS, default='active')
     created_at = models.DateTimeField(auto_now_add=True)

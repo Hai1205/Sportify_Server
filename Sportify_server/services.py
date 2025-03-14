@@ -69,3 +69,6 @@ class AwsS3Service:
             raise Exception(f"Error deleting file from S3: {str(e)}")
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
+
+# class Email:
+    

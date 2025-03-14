@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận đơn hàng</title>
+</head>
+<body>
+    <h2>Xin chào,</h2>
+    <p>Đơn hàng <strong>{{ order_code }}</strong> với số tiền <strong>{{ order_amount }}</strong> đã được xác nhận.</p>
+    <p>Dưới đây là ảnh đính kèm của đơn hàng:</p>
+    <img src="{{ thumbnailUrl }}" alt="Hình ảnh đơn hàng" style="max-width: 300px; height: auto;">
+    <p>Cảm ơn bạn đã đặt hàng!</p>
+</body>
+</html>

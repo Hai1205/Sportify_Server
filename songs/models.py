@@ -1,11 +1,12 @@
 from django.db import models
-from users.models import User
+from django.utils import timezone
 import uuid
 
 class Song(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False, blank=False)
     user = models.ForeignKey("users.User", default=uuid.uuid4, on_delete=models.CASCADE, related_name="user_songs")
     album = models.ForeignKey("albums.Album", default=uuid.uuid4, on_delete=models.CASCADE, related_name="album_songs")
+    releaseDate = models.DateField(default=timezone.now().date, null=False, blank=False)
     title = models.CharField(max_length=255, null=False, blank=False)
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()

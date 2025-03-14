@@ -2,7 +2,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
 from Sportify_Server.services import AwsS3Service
-from .serializers import SongSerializer
+from .serializers import FullInfoAlbumSerializer
 from .models import Song
 from albums.models import Album
 from users.models import User
@@ -12,6 +12,17 @@ from django.http import JsonResponse
 class uploadSongView(GenericAPIView):
     permission_classes = [ IsAdminUser or IsArtistUser]
 
+    def get_audio_duration(self, audioUrl):
+        import requests
+        from mutagen.mp3 import MP3
+        from io import BytesIO
+        """Lấy thời lượng của file MP3"""
+        response = requests.get(audioUrl)
+        if response.status_code == 200:
+            audio = MP3(BytesIO(response.content))  # Đọc file MP3 từ memory
+            return audio.info.length  # Thời lượng tính bằng giây
+        return None
+        
     def post(self, request, userId, albumId):
         # print(userId)
         try:
@@ -23,10 +34,9 @@ class uploadSongView(GenericAPIView):
             
             # Lấy dữ liệu từ request
             title = request.data.get("title")
-            # description = request.data.get("description")
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
-            duration = int(request.data.get("duration"))
+            # duration = int(request.data.get("duration"))
             
             if thumbnail is None or audio is None:
                 return JsonResponse({
@@ -37,13 +47,13 @@ class uploadSongView(GenericAPIView):
             s3_service = AwsS3Service()
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             audioUrl = s3_service.save_file_to_s3(audio)
-
+            
+            duration = self.get_audio_duration(audioUrl)
             # Tạo bài hát mới
             song = Song.objects.create(
-                userId=user,
-                albumId=album or None,
+                user=user,
+                album=album or None,
                 title=title,
-                # description=description,
                 thumbnailUrl=thumbnailUrl,
                 audioUrl=audioUrl,
                 duration=duration,
@@ -54,7 +64,7 @@ class uploadSongView(GenericAPIView):
                 album.save()
 
             # Trả về response
-            serializer = SongSerializer(song)
+            serializer = FullInfoAlbumSerializer(song)
            
             return JsonResponse({
                 "songs": 200,
@@ -68,7 +78,7 @@ class GetAllSongView(GenericAPIView):
     def get(self, request):
         try:
             songs = Song.objects.all()
-            serializer = SongSerializer(songs, many=True)
+            serializer = FullInfoAlbumSerializer(songs, many=True)
         
             return JsonResponse({
                 "songs": 200,
@@ -85,7 +95,7 @@ class GetSongView(GenericAPIView):
     def get(self, request, songId):
         try:
             song = get_object_or_404(Song, id=songId)
-            serializer = SongSerializer(song)
+            serializer = FullInfoAlbumSerializer(song)
         
             return JsonResponse({
                 "songs": 200,
@@ -105,9 +115,9 @@ class DeleteSongView(GenericAPIView):
         try:
             song = get_object_or_404(Song, id=songId)
            
-            albumId = song.albumId_id
+            albumId = song.album_id
             album = get_object_or_404(Album, id=albumId)
-            album.songs.remove(songId)
+            album.songs.remove(song)
             album.save()
     
             song.delete()
@@ -129,7 +139,7 @@ class GetFeaturedView(GenericAPIView):
         try:
             element = 6
             songs = Song.objects.order_by("?")[:element]
-            serializer = SongSerializer(songs, many=True)
+            serializer = FullInfoAlbumSerializer(songs, many=True)
             
             return JsonResponse({
                 "songs": 200,
@@ -149,7 +159,7 @@ class GetTrendingView(GenericAPIView):
         try:
             element = 4
             songs = Song.objects.order_by("?")[:element]
-            serializer = SongSerializer(songs, many=True)
+            serializer = FullInfoAlbumSerializer(songs, many=True)
            
             return JsonResponse({
                 "songs": 200,
@@ -169,7 +179,7 @@ class GetMadeForYouView(GenericAPIView):
         try:
             element = 4
             songs = Song.objects.order_by("?")[:element]
-            serializer = SongSerializer(songs, many=True)
+            serializer = FullInfoAlbumSerializer(songs, many=True)
           
             return JsonResponse({
                 "songs": 200,
