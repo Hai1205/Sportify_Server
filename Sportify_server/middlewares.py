@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from django.conf import settings
 
 EXCLUDED_PATHS = ["/api/auth/login", "/api/auth/register"]
-
 class JWTAuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
         # Bỏ qua kiểm tra token cho các URL được phép
@@ -13,7 +12,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
 
         # Kiểm tra token từ header hoặc cookie
         access_token = request.COOKIES.get(settings.SIMPLE_JWT.get("COOKIE_ACCESS_TOKEN_NAME"))
-        # print(access_token)
+        # print("access_token ", access_token)
         if "HTTP_AUTHORIZATION" not in request.META and access_token:
             request.META["HTTP_AUTHORIZATION"] = f"Bearer {access_token}"
 
@@ -44,3 +43,4 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
                 return response
             except Exception:
                 return JsonResponse({"detail": "Session expired, please log in again"}, status=401)
+

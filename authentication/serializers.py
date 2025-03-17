@@ -7,13 +7,12 @@ from django.shortcuts import get_object_or_404
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        # fields = ('id', 'username', 'email', 'password')
-        fields = '__all__'
+        fields = ('fullName', 'username', 'email', 'password')
         extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        password = validated_data.pop("password")  # Lấy password ra khỏi validated_data
-        user = User(**validated_data)  # Tạo user nhưng chưa có password
+    
+    def create(self, data):
+        password = data.pop("password")  # Lấy password ra khỏi data
+        user = User(**data)  # Tạo user nhưng chưa có password
         user.set_password(password)  # Mã hóa password
         user.is_staff = False  # Chặn client tự cấp quyền admin
         user.save()  # Lưu user vào database
@@ -23,13 +22,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 class RegisterAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        # fields = ('id', 'username', 'email', 'password', 'is_staff')
-        fields = '__all__'
+        fields = ('fullName', 'username', 'email', 'password', 'is_staff')
         extra_kwargs = {'password': {'write_only': True}}
 
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User(**validated_data)
+    def create(self, data):
+        password = data.pop("password")
+        user = User(**data)
         user.is_staff = True
         user.set_password(password)
         user.save()
@@ -41,7 +39,6 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-
         try:
             username = data.get("username")
             password = data.get("password")
@@ -67,3 +64,26 @@ class LoginSerializer(serializers.Serializer):
             }
         except User.DoesNotExist:
             raise serializers.ValidationError("Username or password is incorrect.")
+
+class ChangePasswordSerializer(serializers.Serializer):
+    currentPassword = serializers.CharField(write_only=True)
+    newPassword = serializers.CharField(write_only=True)
+    rePassword = serializers.CharField(write_only=True)
+
+    def update(self, userId, data):
+        user = get_object_or_404(User, id=userId)
+
+        currentPassword = data["currentPassword"]
+        newPassword = data["newPassword"]
+        rePassword = data["rePassword"]
+
+        if not user.check_password(currentPassword):
+            raise serializers.ValidationError("Password is incorrect.")
+        
+        if newPassword != rePassword:
+            raise serializers.ValidationError("Password does not match.")
+
+        user.set_password(newPassword)  # Mã hóa mật khẩu mới
+        user.save()  # Lưu vào database
+        
+        return user

@@ -6,7 +6,7 @@ class SongSerializer(serializers.ModelSerializer):
         model = Song
         fields = '__all__'
 
-class FullInfoAlbumSerializer(serializers.ModelSerializer):
+class FullInfoSongSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     album = serializers.SerializerMethodField()
     

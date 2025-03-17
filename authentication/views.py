@@ -2,10 +2,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, RegisterSerializer, RegisterAdminSerializer
+from .serializers import LoginSerializer, \
+                            RegisterSerializer, \
+                            RegisterAdminSerializer, \
+                            ChangePasswordSerializer
 from users.serializers import UserSerializer
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from users.models import User
 
 class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -16,10 +21,12 @@ class RegisterView(GenericAPIView):
             if serializer.is_valid():
                 user = serializer.save()
                 
+                userSerializer = UserSerializer(user)
+                
                 return JsonResponse({
                     "status": 200,
                     "message": "Register user successfully",
-                    "user": UserSerializer(user).data
+                    "user": userSerializer.data
                 }, safe=False, status=200)
             
             return JsonResponse({
@@ -34,17 +41,21 @@ class RegisterView(GenericAPIView):
 
 class RegisterAdminView(GenericAPIView):
     permission_classes = [IsAdminUser] 
+    # permission_classes = [] 
 
     def post(self, request):
+        
         try:
             serializer = RegisterAdminSerializer(data=request.data)
             if serializer.is_valid():
                 user = serializer.save()
                 
+                userSerializer = UserSerializer(user)
+                
                 return Response({
                     "status": 200,
                     "message": "Register admin successfully",
-                    "user": UserSerializer(user).data
+                    "user": userSerializer.data
                 }, status=200)
             
             return JsonResponse({
@@ -169,7 +180,8 @@ class CheckAdmin(GenericAPIView):
         except Exception as e:
             return JsonResponse({
                 "status": 500,
-                "message": str(e)
+                "message": "You are not admin",
+                "isAdmin": False
             }, status=500)
             
 class CheckArtist(GenericAPIView):
@@ -182,6 +194,31 @@ class CheckArtist(GenericAPIView):
                 "message": "You are artist",
                 "isArtist": True
             }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": "You are not artist",
+                "isArtist": False
+            }, status=500)
+
+class ChangePasswordView(GenericAPIView):
+    def put(self, request, userId):
+        try:
+            print(1)
+            serializer = ChangePasswordSerializer(userId, data=request.data)
+            print(2)
+            if serializer.is_valid():
+                serializer.save()
+                
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Changed password successfully",
+                }, safe=False, status=200)
+            
+            return JsonResponse({
+                "status": 400,
+                "message": serializer.errors
+            }, safe=False, status=400)
         except Exception as e:
             return JsonResponse({
                 "status": 500,

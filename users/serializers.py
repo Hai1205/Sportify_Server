@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, ArtistApplication
 from albums.serializers import AlbumSerializer
+from songs.serializers import SongSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,54 +13,59 @@ class FullInfoUserSerializer(serializers.ModelSerializer):
     albums = AlbumSerializer(many=True, read_only=True)
     followers = UserSerializer(many=True, read_only=True)
     following = UserSerializer(many=True, read_only=True)
+    songs = SongSerializer(many=True, read_only=True)
     
     class Meta:
         model = User
         fields = '__all__'
         extra_kwargs = {'password': {'write_only': True}}
 
-class UpdateUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'password', 'fullName']
-        extra_kwargs = {'password': {'write_only': True}}
+# class UpdateUserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['id', 'fullName', 'country', 'avatarUrl', 'status', 'role', 'biography']
+#         # extra_kwargs = {'password': {'write_only': True}}
 
-    def update(self, user, validated_data):
-        password = validated_data.pop("password", None)  # Lấy password nếu có
-        if password:
-            user.set_password(password)  # Mã hóa password
+#     def update(self, user, validated_data):
+#         password = validated_data.pop("password", None)  # Lấy password nếu có
+#         if password:
+#             user.set_password(password)  # Mã hóa password
         
-        fullName = validated_data.pop("fullName", None)  # Lấy fullName nếu có
-        if fullName:
-            user.fullName = fullName
+#         fullName = validated_data.pop("fullName", None)  # Lấy fullName nếu có
+#         if fullName:
+#             user.fullName = fullName
         
-        user.save()  # Lưu user vào database
+#         user.save()  # Lưu user vào database
         
-        return user
+#         return user
     
 class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id', 'status', 'role']
+        model = ArtistApplication
+        fields = ['id', 'status']
 
-    def update(self, user, data):
-        role = data.get("role")
+    def update(self, application, data):
+        status = data.get("status")
         
-        user.status = "active"
-        user.role = role
+        application.status = status
         
-        user.save()  # Lưu user vào database
+        if status == "approved":
+            application.user.role = "artist"
+            application.user.save()
         
-        return user
+        application.save()
+        
+        return application
 
-class RequireUpdateUserToArtistSerializer(serializers.ModelSerializer):
+class ArtistApplicationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id']
+        model = ArtistApplication
+        fields = '__all__'
 
-    def update(self, user, data):
-        user.status = "pending"
-        
-        user.save()  # Lưu user vào database
-        
-        return user
+class FullInfoArtistApplicationSerializer(serializers.ModelSerializer):
+    songs = SongSerializer(many=True, read_only=True)
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = ArtistApplication
+        fields = '__all__'

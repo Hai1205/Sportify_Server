@@ -3,6 +3,7 @@ import uuid
 import os
 from django.conf import settings
 from botocore.exceptions import BotoCoreError, NoCredentialsError
+import requests
 
 class AwsS3Service:
     def __init__(self):
@@ -70,5 +71,20 @@ class AwsS3Service:
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
 
-# class Email:
-    
+    def download_file_from_s3(self, file_url, local_filename):
+        from pathlib import Path
+        # Lấy thư mục Downloads của người dùng
+        downloads_folder = str(Path.home() / "Downloads")
+        
+        # Tạo đường dẫn đầy đủ cho file tải về
+        file_path = os.path.join(downloads_folder, local_filename)
+        
+        # Gửi request tải file
+        response = requests.get(file_url, stream=True)
+        if response.status_code == 200:
+            with open(file_path, "wb") as file:
+                for chunk in response.iter_content(1024):
+                    file.write(chunk)
+            print(f"File downloaded: {file_path}")  # In ra đường dẫn file đã lưu
+        else:
+            print("Download failed")

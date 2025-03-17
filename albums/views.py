@@ -1,6 +1,6 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
-from .serializers import FullInfoAlbumSerializer
+from .serializers import FullInfoAlbumSerializer, AlbumSerializer
 from rest_framework.generics import GenericAPIView
 from .models import Album
 from songs.models import Song
@@ -8,6 +8,7 @@ from users.models import User
 from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from django.db.models import Q
 
 class UploadAlbumView(GenericAPIView):
     permission_classes = [IsAdminUser | IsArtistUser ]
@@ -43,7 +44,7 @@ class UploadAlbumView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Created album successfully",
-                "album": FullInfoAlbumSerializer(album).data
+                "album": AlbumSerializer(album).data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -120,7 +121,15 @@ class DeleteAlbumView(GenericAPIView):
         try:
             album = get_object_or_404(Album, id=albumId)
             
-            Song.objects.filter(album_id=albumId).delete()
+            s3_service = AwsS3Service()
+            thumbnailUrl = album.thumbnailUrl
+            s3_service.delete_file_from_s3(thumbnailUrl)
+            
+            songs = Song.objects.filter(album_id=albumId)
+            for song in songs:
+                s3_service.delete_file_from_s3(song.thumbnailUrl)
+                s3_service.delete_file_from_s3(song.audioUrl)
+                song.delete()
             
             album.delete()
         
@@ -128,6 +137,64 @@ class DeleteAlbumView(GenericAPIView):
                 "status": 200,
                 "message": "Deleted album successfully",
             }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class updateAlbum(GenericAPIView):
+    permission_classes = [IsAdminUser | IsArtistUser ]
+    
+    def put(self, request, albumId):
+        try:
+            album = get_object_or_404(Album, id=albumId)
+            
+            title = request.data.get("title")
+            thumbnail = request.data.get("thumbnail")
+            releaseDate = request.data.get("releaseDate")
+            genre = request.data.get("genre")
+            
+            album.title = title 
+            album.releaseDate = releaseDate
+            album.genre = genre
+            
+            if thumbnail is not None:
+                s3_service = AwsS3Service()
+                thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
+                album.thumbnailUrl = thumbnailUrl
+            
+            album.save()
+            
+            serializer = FullInfoAlbumSerializer(album)
+            
+            return JsonResponse({
+                "status": 200,
+                "message": "Updated album successfully",
+                "album": serializer.data
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class searchAlbums(GenericAPIView):
+    permission_classes = [ AllowAny ]
+    
+    def get(self, request):
+        try:
+            query = request.GET.get('query')
+            
+            albums = Album.objects.filter(Q(title__icontains=query) | Q(user__fullName__icontains=query))
+        
+            serializer = FullInfoAlbumSerializer(albums, many=True)
+        
+            return JsonResponse({
+                "status": 200,
+                "message": "SearchSearch album successfully",
+                "album": serializer.data
+            }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
                 "status": 500,
