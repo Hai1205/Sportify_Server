@@ -17,7 +17,7 @@ class Song(models.Model):
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()
     
-    lyric = models.CharField(max_length=8000, null=False, blank=False, default="")
+    lyrics = models.CharField(max_length=8000, null=False, blank=False, default="")
     duration = models.IntegerField(null=False, blank=False, default=0)
     views = models.PositiveIntegerField(default=0)
     

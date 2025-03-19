@@ -28,10 +28,12 @@ class getGeneralStatView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get general statistics successfully",
-                "totalAlbums": totalAlbums,
-                "totalSongs": totalSongs,
-                "totalUsers": totalUsers,
-                "totalArtists": uniqueArtists
+                "generalStat": {
+                    "totalAlbums": totalAlbums,
+                    "totalSongs": totalSongs,
+                    "totalUsers": totalUsers,
+                    "totalArtists": uniqueArtists
+                }
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

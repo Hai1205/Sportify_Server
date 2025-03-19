@@ -36,7 +36,7 @@ class uploadSongView(GenericAPIView):
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
             genre = request.data.get("genre")
-            lyric = request.data.get("lyric")
+            lyrics = request.data.get("lyrics")
             releaseDate = request.data.get("releaseDate")
             albumId = request.data.get("albumId")
             
@@ -62,7 +62,7 @@ class uploadSongView(GenericAPIView):
                 thumbnailUrl=thumbnailUrl,
                 audioUrl=audioUrl,
                 duration=duration,
-                lyric=lyric,
+                lyrics=lyrics,
                 genre=genre,
                 releaseDate=releaseDate,
             )
@@ -85,6 +85,8 @@ class uploadSongView(GenericAPIView):
             raise Exception(f"Unexpected error: {str(e)}")
         
 class GetAllSongView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request):
         try:
             songs = Song.objects.all()

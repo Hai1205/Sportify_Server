@@ -4,6 +4,27 @@ import os
 from django.conf import settings
 from botocore.exceptions import BotoCoreError, NoCredentialsError
 import requests
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+import requests
+from io import BytesIO
+from django.core.mail import EmailMessage
+from django.conf import settings
+import random
+import string
+
+class ultils:
+    @staticmethod
+    def generate_password(length=10):
+        characters = string.ascii_letters + string.digits  # Chứa cả chữ hoa, chữ thường và số
+        password = ''.join(random.choices(characters, k=length))
+        return password
+    
+    @staticmethod
+    def generate_OTP(length=6):
+        characters = string.digits
+        password = ''.join(random.choices(characters, k=length))
+        return password
 
 class AwsS3Service:
     def __init__(self):
@@ -88,3 +109,76 @@ class AwsS3Service:
             print(f"File downloaded: {file_path}")  # In ra đường dẫn file đã lưu
         else:
             print("Download failed")
+            
+class mailService:
+    @staticmethod
+    def test(order_code, order_amount, thumbnailUrl, recipient_emails):
+        send_from = settings.EMAIL_HOST_USER
+        subject = 'Order Details'
+
+        # Render template HTML
+        html_content = render_to_string('mail_template.html', {
+            'order_code': order_code,
+            'order_amount': order_amount,
+            'thumbnailUrl': thumbnailUrl  # Hiển thị ảnh trong email
+        })
+
+        # Tạo email
+        email_message = EmailMessage(
+            subject,
+            html_content,
+            send_from,
+            recipient_emails
+        )
+        email_message.content_subtype = "html"  # Email ở dạng HTML
+
+        # Tải file từ S3 và đính kèm vào email
+        response = requests.get(thumbnailUrl)
+        if response.status_code == 200:
+            file_data = BytesIO(response.content)
+            email_message.attach("thumbnail.png", file_data.getvalue(), "image/png")  # Đính kèm file
+        
+        email_message.send()
+        
+    @staticmethod
+    def mailActiveAccount(OTP, recipient):
+        send_from = settings.EMAIL_HOST_USER
+        subject = 'Active Account'
+        recipient_emails = [recipient,]
+
+        html_content = render_to_string('mail_active_account.html', {
+            'OTP': OTP,
+        })
+
+        # Tạo email
+        email_message = EmailMessage(
+            subject,
+            html_content,
+            send_from,
+            recipient_emails
+        )
+        email_message.content_subtype = "html"  # Email ở dạng HTML
+        
+        email_message.send()
+        
+    @staticmethod
+    def mailResetPassword(password, recipient):
+        send_from = settings.EMAIL_HOST_USER
+        subject = 'Active Account'
+        recipient_emails = [recipient,]
+
+        html_content = render_to_string('mail_password.html', {
+            'password': password,
+        })
+
+        # Tạo email
+        email_message = EmailMessage(
+            subject,
+            html_content,
+            send_from,
+            recipient_emails
+        )
+        email_message.content_subtype = "html"  # Email ở dạng HTML
+        
+        email_message.send()
+    

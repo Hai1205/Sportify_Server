@@ -10,10 +10,14 @@ from .views import GetAllUserView, \
                     ResponseUpdateUserToArtistView, \
                     SearchUsersView, \
                     GetArtistApplications, \
-                    DeleteArtistApplicationView
+                    DeleteArtistApplicationView, \
+                    GetUserbyRoleView, \
+                    CreateUserView
 
 urlpatterns = [
+    path('create-user/', CreateUserView.as_view(), name='create-user'),
     path('', GetAllUserView.as_view(), name='get-all-user'),
+    path('get-user-by-role/', GetUserbyRoleView.as_view(), name='get-user-by-role'),
     path('get-user/<uuid:userId>/', GetUserView.as_view(), name='get-user'),
     path('update-user/<uuid:userId>/', UpdateUserView.as_view(), name='update-user'),
     path('delete-user/<uuid:userId>/', DeleteUserView.as_view(), name='delete-user'),

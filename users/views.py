@@ -2,7 +2,8 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 from .serializers import UserSerializer, \
                             FullInfoUserSerializer, \
                             ResponseUpdateUserToArtistSerializer, \
-                            FullInfoArtistApplicationSerializer
+                            FullInfoArtistApplicationSerializer, \
+                            CreateUserSerializer
                             # UpdateUserSerializer, \
 from .models import User, ArtistApplication
 from songs.models import Song
@@ -15,12 +16,59 @@ from mutagen.mp3 import MP3
 from io import BytesIO
 from Sportify_Server.services import AwsS3Service
 
+class CreateUserView(GenericAPIView):
+    permission_classes = [IsAdminUser] 
+
+    def post(self, request):
+        
+        try:
+            serializer = CreateUserSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Create user successfully",
+                }, status=200)
+            
+            return JsonResponse({
+                    "status": 400,
+                    "message": str(serializer.errors)
+                }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
 class GetAllUserView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         try:
             users = User.objects.all()
+            
+            serializer = FullInfoUserSerializer(users, many=True)
+        
+            return JsonResponse({
+                "status": 200,
+                "message": "Get all user successfully",
+                "users": serializer.data
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetUserbyRoleView(GenericAPIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        try:
+            role = request.GET.get('role')
+            
+            users = User.objects.filter(Q(role__icontains=role))
             
             serializer = FullInfoUserSerializer(users, many=True)
         
@@ -146,6 +194,7 @@ class UpdateUserView(GenericAPIView):
             user.save()
             
             serializer = FullInfoUserSerializer(user)
+            
             return JsonResponse({
                 "status": 200,
                 "message": "Updated user successfully",

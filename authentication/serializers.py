@@ -3,6 +3,8 @@ from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.serializers import UserSerializer
 from django.shortcuts import get_object_or_404
+from Sportify_Server.services import mailService, ultils
+from .models import OTP
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,27 +14,15 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     def create(self, data):
         password = data.pop("password")  # Lấy password ra khỏi data
+        if len(password) < 8:
+            raise serializers.ValidationError("Password is atleast 8 charactors.")
+       
         user = User(**data)  # Tạo user nhưng chưa có password
         user.set_password(password)  # Mã hóa password
         user.is_staff = False  # Chặn client tự cấp quyền admin
         user.save()  # Lưu user vào database
         
         return user
-    
-class RegisterAdminSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('fullName', 'username', 'email', 'password', 'is_staff')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, data):
-        password = data.pop("password")
-        user = User(**data)
-        user.is_staff = True
-        user.set_password(password)
-        user.save()
-      
-        return user  
     
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -54,7 +44,20 @@ class LoginSerializer(serializers.Serializer):
 
             if user.status == 'locked':
                 raise serializers.ValidationError("Account is locked.")
-
+            
+            if user.status == 'pending':
+                code = ultils.generate_OTP()
+                
+                OTP.objects.create(
+                    user=user,
+                    code=code,
+                )
+                
+                recipient = user.email
+                mailService.mailActiveAccount(code, recipient)
+                
+                raise serializers.ValidationError("Account is pending verification. Please check your email for the OTP.")
+            
             # Tạo token JWT
             refresh = RefreshToken.for_user(user)
             return {

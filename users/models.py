@@ -7,7 +7,7 @@ class User(AbstractUser):
     USER_ROLE_CHOICES = [
         ('user', 'User'),
         ('artist', 'Artist'),
-        # ('admin', 'Admin'),
+        ('admin', 'Admin'),
     ]
     
     USER_STATUS_CHOICE = [
@@ -49,7 +49,7 @@ class User(AbstractUser):
     fullName = models.CharField(max_length=255, null=False, blank=False, default=username)
     country = models.CharField(max_length=255, choices=COUNTRY_CHOICE, null=False, blank=False, default='vietnam')
     avatarUrl = models.URLField(default='avatar.com')
-    status = models.CharField(max_length=10, choices=USER_STATUS_CHOICE, default='active')
+    status = models.CharField(max_length=10, choices=USER_STATUS_CHOICE, default='pending')
     role = models.CharField(max_length=10, choices=USER_ROLE_CHOICES, default='user')
     created_at = models.DateTimeField(auto_now_add=True)
    

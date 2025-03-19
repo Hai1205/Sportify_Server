@@ -4,13 +4,14 @@ from Sportify_Server.permissions import IsArtistUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, \
                             RegisterSerializer, \
-                            RegisterAdminSerializer, \
                             ChangePasswordSerializer
 from users.serializers import UserSerializer
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from users.models import User
+from .models import OTP
+from Sportify_Server.services import mailService, ultils
 
 class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -21,12 +22,21 @@ class RegisterView(GenericAPIView):
             if serializer.is_valid():
                 user = serializer.save()
                 
-                userSerializer = UserSerializer(user)
+                code = ultils.generate_OTP()
+                
+                userData = UserSerializer(user).data
+                
+                OTP.objects.create(
+                    user=user,
+                    code=code,
+                )
+                
+                recipient = userData["email"]
+                mailService.mailActiveAccount(code, recipient)
                 
                 return JsonResponse({
                     "status": 200,
                     "message": "Register user successfully",
-                    "user": userSerializer.data
                 }, safe=False, status=200)
             
             return JsonResponse({
@@ -38,30 +48,73 @@ class RegisterView(GenericAPIView):
                 "status": 500,
                 "message": str(e)
             }, status=500)
-
-class RegisterAdminView(GenericAPIView):
-    permission_classes = [IsAdminUser] 
-    # permission_classes = [] 
-
-    def post(self, request):
-        
-        try:
-            serializer = RegisterAdminSerializer(data=request.data)
-            if serializer.is_valid():
-                user = serializer.save()
-                
-                userSerializer = UserSerializer(user)
-                
-                return Response({
-                    "status": 200,
-                    "message": "Register admin successfully",
-                    "user": userSerializer.data
-                }, status=200)
             
-            return JsonResponse({
+class CheckOTPView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, email):
+        try:
+            user = get_object_or_404(User, email=email)
+            
+            otp_code = request.data.get("OTP")
+            if not otp_code:
+                return JsonResponse({
                     "status": 400,
-                    "message": str(serializer.errors)
+                    "message": "OTP is required!"
                 }, status=400)
+
+            otp_instance = OTP.objects.filter(user=user, code=otp_code).order_by('-codeExpired').first()
+
+            if not otp_instance:                
+                return JsonResponse({
+                    "status": 400,
+                    "message": "OTP is invalid!"
+                }, status=400)
+
+            if not otp_instance.is_valid():
+                return JsonResponse({
+                    "status": 400,
+                    "message": "OTP is expired!"
+                }, status=400)
+
+            user.status = "active"
+            user.save()
+            
+            otp_instance.delete()
+
+            return JsonResponse({
+                "status": 200,
+                "message": "OTP is valid!",
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+
+class SendOTPView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, email):
+        try:
+            user = get_object_or_404(User, email=email)
+            
+            code = ultils.generate_OTP()
+            
+            OTP.objects.create(
+                user=user,
+                code=code,
+            )
+                
+            recipient = user.email
+            mailService.mailActiveAccount(code, recipient)
+
+            return JsonResponse({
+                "status": 200,
+                "message": "OTP is sent!",
+            }, status=200)
+
         except Exception as e:
             return JsonResponse({
                 "status": 500,
@@ -111,7 +164,6 @@ class LoginView(GenericAPIView):
                 "status": 500,
                 "message": str(e)
             }, status=500)
-
     
 class LogoutView(GenericAPIView):
     def post(self, request):
@@ -204,9 +256,7 @@ class CheckArtist(GenericAPIView):
 class ChangePasswordView(GenericAPIView):
     def put(self, request, userId):
         try:
-            print(1)
             serializer = ChangePasswordSerializer(userId, data=request.data)
-            print(2)
             if serializer.is_valid():
                 serializer.save()
                 
