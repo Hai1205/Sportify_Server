@@ -3,7 +3,7 @@ from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.serializers import UserSerializer
 from django.shortcuts import get_object_or_404
-from Sportify_Server.services import mailService, ultils
+from Sportify_Server.services import mailService, utils
 from .models import OTP
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -46,7 +46,7 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Account is locked.")
             
             if user.status == 'pending':
-                code = ultils.generate_OTP()
+                code = utils.generate_OTP()
                 
                 OTP.objects.create(
                     user=user,
@@ -56,7 +56,13 @@ class LoginSerializer(serializers.Serializer):
                 recipient = user.email
                 mailService.mailActiveAccount(code, recipient)
                 
-                raise serializers.ValidationError("Account is pending verification. Please check your email for the OTP.")
+                return {
+                    "refresh_token": None,
+                    "access_token": None,
+                    "user": UserSerializer(user).data,
+                    "isPending": True,
+                    "message": "Account is pending verification. Please check your email for the OTP."
+                }
             
             # Tạo token JWT
             refresh = RefreshToken.for_user(user)
@@ -88,5 +94,23 @@ class ChangePasswordSerializer(serializers.Serializer):
 
         user.set_password(newPassword)  # Mã hóa mật khẩu mới
         user.save()  # Lưu vào database
+        
+        return user
+    
+class ForgotPasswordSerializer(serializers.Serializer):
+    newPassword = serializers.CharField(write_only=True)
+    rePassword = serializers.CharField(write_only=True)
+
+    def update(self, userId, data):
+        user = get_object_or_404(User, id=userId)
+
+        newPassword = data["newPassword"]
+        rePassword = data["rePassword"]
+
+        if newPassword != rePassword:
+            raise serializers.ValidationError("Password does not match.")
+
+        user.set_password(newPassword)
+        user.save()
         
         return user

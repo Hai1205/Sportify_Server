@@ -13,7 +13,7 @@ from django.conf import settings
 import random
 import string
 
-class ultils:
+class utils:
     @staticmethod
     def generate_password(length=10):
         characters = string.ascii_letters + string.digits  # Chứa cả chữ hoa, chữ thường và số
@@ -162,12 +162,13 @@ class mailService:
         email_message.send()
         
     @staticmethod
-    def mailResetPassword(password, recipient):
+    def mailResetPassword(email, password):
         send_from = settings.EMAIL_HOST_USER
         subject = 'Active Account'
-        recipient_emails = [recipient,]
+        recipient_emails = [email,]
 
         html_content = render_to_string('mail_password.html', {
+            'email': email,
             'password': password,
         })
 

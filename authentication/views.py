@@ -4,14 +4,15 @@ from Sportify_Server.permissions import IsArtistUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, \
                             RegisterSerializer, \
-                            ChangePasswordSerializer
+                            ChangePasswordSerializer, \
+                            ForgotPasswordSerializer
 from users.serializers import UserSerializer
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from users.models import User
 from .models import OTP
-from Sportify_Server.services import mailService, ultils
+from Sportify_Server.services import mailService, utils
 
 class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -22,7 +23,7 @@ class RegisterView(GenericAPIView):
             if serializer.is_valid():
                 user = serializer.save()
                 
-                code = ultils.generate_OTP()
+                code = utils.generate_OTP()
                 
                 userData = UserSerializer(user).data
                 
@@ -41,9 +42,10 @@ class RegisterView(GenericAPIView):
             
             return JsonResponse({
                     "status": 400,
-                    "message": str(serializer.errors)
+                    "message": "username or email already exists."
                 }, status=400)
         except Exception as e:
+            print(e)
             return JsonResponse({
                 "status": 500,
                 "message": str(e)
@@ -57,13 +59,14 @@ class CheckOTPView(GenericAPIView):
             user = get_object_or_404(User, email=email)
             
             otp_code = request.data.get("OTP")
+
             if not otp_code:
                 return JsonResponse({
                     "status": 400,
                     "message": "OTP is required!"
                 }, status=400)
 
-            otp_instance = OTP.objects.filter(user=user, code=otp_code).order_by('-codeExpired').first()
+            otp_instance = OTP.objects.filter(user=user, code=otp_code).order_by('-timeExpired').first()
 
             if not otp_instance:                
                 return JsonResponse({
@@ -88,6 +91,7 @@ class CheckOTPView(GenericAPIView):
             }, status=200)
 
         except Exception as e:
+            print(e)
             return JsonResponse({
                 "status": 500,
                 "message": str(e)
@@ -100,12 +104,15 @@ class SendOTPView(GenericAPIView):
         try:
             user = get_object_or_404(User, email=email)
             
-            code = ultils.generate_OTP()
+            code = utils.generate_OTP()
             
-            OTP.objects.create(
+            otp = OTP.objects.create(
                 user=user,
                 code=code,
             )
+            from django.utils import timezone
+            print("timeExpired " + str(otp.timeExpired))
+            print("timezone.now() " + str(timezone.now()))
                 
             recipient = user.email
             mailService.mailActiveAccount(code, recipient)
@@ -129,14 +136,23 @@ class LoginView(GenericAPIView):
             serializer = LoginSerializer(data=request.data)
             if serializer.is_valid():
                 data = serializer.validated_data
-                
+
+                if data.get("isPending"):
+                    return Response({
+                        "status": 202,
+                        "message": data["message"],
+                        "user": data["user"],
+                        "isVerified": False,
+                    }, status=202)
+
                 response = Response({
                     "status": 200,
                     "message": "Login user successfully",
-                    "user": data["user"]
+                    "user": data["user"],
+                    "isVerified": True,
                 }, status=200)
 
-                # Lưu token vào cookies với HttpOnly
+                # Lưu token vào cookies
                 response.set_cookie(
                     key="access_token",
                     value=data["access_token"],
@@ -144,7 +160,6 @@ class LoginView(GenericAPIView):
                     secure=False,  # Đặt thành False nếu không dùng HTTPS
                     samesite="Lax"
                 )
-                
                 response.set_cookie(
                     key="refresh_token",
                     value=data["refresh_token"],
@@ -154,17 +169,22 @@ class LoginView(GenericAPIView):
                 )
 
                 return response
-            
-            return JsonResponse({
-                    "status": 400,
-                    "message": str(serializer.errors)
-                }, status=400)
+
+            # Nếu có lỗi, kiểm tra user trước khi truy cập
+            return Response({
+                "status": 400,
+                "message": "Username or password is incorrect.",
+                "user": None,
+                "isVerified": False,
+            }, status=400)
+
         except Exception as e:
-            return JsonResponse({
+            return Response({
                 "status": 500,
-                "message": str(e)
+                "message": str(e),
+                "isVerified": False,
             }, status=500)
-    
+
 class LogoutView(GenericAPIView):
     def post(self, request):
         try:
@@ -220,37 +240,48 @@ class TokenRefreshView(GenericAPIView):
             }, status=500)
     
 class CheckAdmin(GenericAPIView):
-    permission_classes = [IsAdminUser]
-    
     def post(self, request):
         try:
+            if request.user and (request.user.role == 'admin' or request.user.is_staff):
+                return JsonResponse({
+                    "status": 200,
+                    "message": "You are admin",
+                    "isAdmin": True
+                }, safe=False, status=200)
+            
             return JsonResponse({
                 "status": 200,
-                "message": "You are admin",
-                "isAdmin": True
+                "message": "You are not admin",
+                "isAdmin": False
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
                 "status": 500,
-                "message": "You are not admin",
+                "message": str(e),
+                # "message": "You are not admin",
                 "isAdmin": False
             }, status=500)
             
 class CheckArtist(GenericAPIView):
-    permission_classes = [IsArtistUser]
-    
     def post(self, request):
         try:
+            if request.user and request.user.role == 'artist':
+                return JsonResponse({
+                    "status": 200,
+                    "message": "You are artist",
+                    "isAdmin": True
+                }, safe=False, status=200)
+            
             return JsonResponse({
                 "status": 200,
-                "message": "You are artist",
-                "isArtist": True
+                "message": "You are not artist",
+                "isAdmin": False
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
                 "status": 500,
                 "message": "You are not artist",
-                "isArtist": False
+                "isAdmin": False
             }, status=500)
 
 class ChangePasswordView(GenericAPIView):
@@ -269,6 +300,46 @@ class ChangePasswordView(GenericAPIView):
                 "status": 400,
                 "message": serializer.errors
             }, safe=False, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class ForgotPasswordView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
+    def put(self, request, userId):
+        try:
+            serializer = ForgotPasswordSerializer(userId, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                
+                return JsonResponse({
+                    "status": 200,
+                    "message": "Forgot password successfully",
+                }, safe=False, status=200)
+            
+            return JsonResponse({
+                "status": 400,
+                "message": serializer.errors
+            }, safe=False, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class ResetPasswordView(GenericAPIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            
+            password = utils.generate_password()
+            email = user.email
+            mailService.mailResetPassword(email, password)
         except Exception as e:
             return JsonResponse({
                 "status": 500,

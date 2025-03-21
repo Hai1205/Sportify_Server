@@ -7,7 +7,9 @@ from .views import RegisterView, \
                     CheckArtist, \
                     ChangePasswordView, \
                     CheckOTPView, \
-                    SendOTPView
+                    SendOTPView, \
+                    ResetPasswordView, \
+                    ForgotPasswordView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -17,6 +19,8 @@ urlpatterns = [
     path('check-admin/', CheckAdmin.as_view(), name='check-admin'),
     path('check-artist/', CheckArtist.as_view(), name='check-artist'),
     path('change-password/<uuid:userId>/', ChangePasswordView.as_view(), name='change-password'),
+    path('forgot-password/<uuid:userId>/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/<uuid:userId>/', ResetPasswordView.as_view(), name='reset-password'),
     path('check-otp/<str:email>/', CheckOTPView.as_view(), name='check-otp'),
     path('send-otp/<str:email>/', SendOTPView.as_view(), name='send-otp'),
 ]

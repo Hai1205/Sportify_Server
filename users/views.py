@@ -14,8 +14,7 @@ from django.db.models import Q
 import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
-from Sportify_Server.services import AwsS3Service
-
+from Sportify_Server.services import AwsS3Service, mailService, utils
 class CreateUserView(GenericAPIView):
     permission_classes = [IsAdminUser] 
 
@@ -25,6 +24,11 @@ class CreateUserView(GenericAPIView):
             serializer = CreateUserSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
+                print(serializer.data["email"])
+                
+                password = utils.generate_password()
+                email = serializer.data["email"]
+                mailService.mailResetPassword(email, password)
                 
                 return JsonResponse({
                     "status": 200,
@@ -74,7 +78,7 @@ class GetUserbyRoleView(GenericAPIView):
         
             return JsonResponse({
                 "status": 200,
-                "message": "Get all user successfully",
+                "message": f"Get {role} successfully",
                 "users": serializer.data
             }, safe=False, status=200)
         except Exception as e:
