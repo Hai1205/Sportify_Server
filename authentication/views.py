@@ -1,8 +1,9 @@
-from rest_framework.response import Response
+# from rest_framework.response import JsonResponse
 from rest_framework.permissions import AllowAny, IsAdminUser
-from Sportify_Server.permissions import IsArtistUser
+# from Sportify_Server.permissions import IsArtistUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginSerializer, \
+                            LoginWithGoogleSerializer, \
                             RegisterSerializer, \
                             ChangePasswordSerializer, \
                             ForgotPasswordSerializer
@@ -138,14 +139,14 @@ class LoginView(GenericAPIView):
                 data = serializer.validated_data
 
                 if data.get("isPending"):
-                    return Response({
+                    return JsonResponse({
                         "status": 202,
                         "message": data["message"],
                         "user": data["user"],
                         "isVerified": False,
                     }, status=202)
 
-                response = Response({
+                response = JsonResponse({
                     "status": 200,
                     "message": "Login user successfully",
                     "user": data["user"],
@@ -171,7 +172,7 @@ class LoginView(GenericAPIView):
                 return response
 
             # Nếu có lỗi, kiểm tra user trước khi truy cập
-            return Response({
+            return JsonResponse({
                 "status": 400,
                 "message": "Username or password is incorrect.",
                 "user": None,
@@ -179,7 +180,54 @@ class LoginView(GenericAPIView):
             }, status=400)
 
         except Exception as e:
-            return Response({
+            return JsonResponse({
+                "status": 500,
+                "message": str(e),
+                "isVerified": False,
+            }, status=500)
+            
+class LoginWithGoogleView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            serializer = LoginWithGoogleSerializer(data=request.data)
+            if serializer.is_valid():
+                data = serializer.validated_data
+
+                response = JsonResponse({
+                    "status": 200,
+                    "message": "Login user successfully",
+                    "user": data["user"],
+                    "isVerified": True,
+                }, status=200)
+
+                # Lưu token vào cookies
+                response.set_cookie(
+                    key="access_token",
+                    value=data["access_token"],
+                    httponly=True,
+                    secure=False,
+                    samesite="Lax"
+                )
+                response.set_cookie(
+                    key="refresh_token",
+                    value=data["refresh_token"],
+                    httponly=True,
+                    secure=False,
+                    samesite="Lax"
+                )
+
+                return response
+            
+            return JsonResponse({
+                "status": 400,
+                "message": "Invalid input data",
+                "errors": serializer.errors,
+            }, status=400)
+
+        except Exception as e:
+            return JsonResponse({
                 "status": 500,
                 "message": str(e),
                 "isVerified": False,
@@ -188,7 +236,7 @@ class LoginView(GenericAPIView):
 class LogoutView(GenericAPIView):
     def post(self, request):
         try:
-            response = Response({
+            response = JsonResponse({
                 "status": 200,
                 "message": "Logout user successfully"
             }, status=200)
@@ -219,7 +267,7 @@ class TokenRefreshView(GenericAPIView):
             
             access_token = str(refresh.access_token)
 
-            response = Response({
+            response = JsonResponse({
                 "status": 200,
                 "message": "Access token has been refresh"
             }, status=200)

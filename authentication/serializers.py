@@ -74,6 +74,39 @@ class LoginSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Username or password is incorrect.")
 
+class LoginWithGoogleSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    avatarUrl = serializers.CharField()
+    fullName = serializers.CharField()
+
+    def validate(self, data):
+        email = data.get("email")
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            user = self.create(data)
+
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            "refresh_token": str(refresh),
+            "access_token": str(refresh.access_token),
+            "user": UserSerializer(user).data,
+        }
+        
+    def create(self, data):
+        password = utils.generate_password()
+        email = data.get("email")
+       
+        user = User(**data)
+        user.set_password(password)
+        user.username = email
+        user.status = 'active'
+        user.is_staff = False
+        user.save()
+        
+        return user
+
 class ChangePasswordSerializer(serializers.Serializer):
     currentPassword = serializers.CharField(write_only=True)
     newPassword = serializers.CharField(write_only=True)
