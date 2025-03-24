@@ -1,0 +1,8 @@
+from django.urls import re_path
+from .consumers import ChatConsumer
+
+websocket_urlpatterns = [
+    re_path(r"ws/chat/(?P<user_id>\w+)/$", ChatConsumer.as_asgi()),
+]
+
+# run command: daphne -p 8001 Sportify_Server.asgi:application
