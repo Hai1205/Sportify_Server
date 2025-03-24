@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, FullInfoUserSerializer
 from django.shortcuts import get_object_or_404
 from Sportify_Server.services import mailService, utils
 from .models import OTP
@@ -69,7 +69,7 @@ class LoginSerializer(serializers.Serializer):
             return {
                 "refresh_token": str(refresh),
                 "access_token": str(refresh.access_token),
-                "user": UserSerializer(user).data,
+                "user": FullInfoUserSerializer(user).data,
             }
         except User.DoesNotExist:
             raise serializers.ValidationError("Username or password is incorrect.")

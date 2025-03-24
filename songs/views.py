@@ -17,24 +17,24 @@ class uploadSongView(GenericAPIView):
     permission_classes = [IsAdminUser or IsArtistUser]
 
     def get_audio_duration(self, audioUrl):
-        """Lấy thời lượng của file MP3"""
         response = requests.get(audioUrl)
+        
         if response.status_code == 200:
-            audio = MP3(BytesIO(response.content))  # Đọc file MP3 từ memory
-            return audio.info.length  # Thời lượng tính bằng giây
+            audio = MP3(BytesIO(response.content))
+            
+            return audio.info.length
+        
         return None
         
     def post(self, request, userId):
-        # print(userId)
         try:
-            # Kiểm tra id có tồn tại không
             album = None
             user = get_object_or_404(User, id=userId)
             
-            # Lấy dữ liệu từ request
             title = request.data.get("title")
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
+            video = request.FILES.get("video")
             genre = request.data.get("genre")
             lyrics = request.data.get("lyrics")
             releaseDate = request.data.get("releaseDate")
@@ -46,21 +46,23 @@ class uploadSongView(GenericAPIView):
             if thumbnail is None or audio is None:
                 return JsonResponse({
                     "status": 400,
-                    "message": "Please upload thumbnail and audio"
+                    "message": "Please upload thumbnail video and audio"
                 }, status=400)
             
             s3_service = AwsS3Service()
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             audioUrl = s3_service.save_file_to_s3(audio)
+            videoUrl = s3_service.save_file_to_s3(video)
             
             duration = self.get_audio_duration(audioUrl)
-            # Tạo bài hát mới
+
             song = Song.objects.create(
-                user=user,
-                album=album or None,
+                # user=user,
+                # album=album or None,
                 title=title,
                 thumbnailUrl=thumbnailUrl,
                 audioUrl=audioUrl,
+                videoUrl=videoUrl,
                 duration=duration,
                 lyrics=lyrics,
                 genre=genre,

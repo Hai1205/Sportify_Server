@@ -23,8 +23,7 @@ class FullInfoUserSerializer(serializers.ModelSerializer):
 class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('fullName', 'username', 'email', 'is_staff', "role", "status")
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ('fullName', 'password', 'username', 'email', 'is_staff', "role", "status")
 
     def create(self, data):
         password = data.pop("password")

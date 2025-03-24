@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from Sportify_Server.mixin import GenreMixin
+from Sportify_Server.services import utils
 
 class User(AbstractUser):
     USER_ROLE_CHOICES = [
@@ -45,7 +46,7 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(unique=True, max_length=255, null=False, blank=False)
     email = models.EmailField(unique=True, max_length=255, null=False, blank=False)
-    password = models.CharField(max_length=255, null=False, blank=False)
+    password = models.CharField(max_length=255, null=False, blank=False, default=utils.generate_password())
     fullName = models.CharField(max_length=255, null=False, blank=False, default=username)
     country = models.CharField(max_length=255, choices=COUNTRY_CHOICE, null=False, blank=False, default='vietnam')
     avatarUrl = models.URLField(default='avatar.com')
@@ -60,8 +61,8 @@ class User(AbstractUser):
     twitter = models.CharField(max_length=255, null=True, blank=True)
     youtube = models.CharField(max_length=255, null=True, blank=True)
     facebook = models.CharField(max_length=255, null=True, blank=True)
-    albums = models.ManyToManyField("albums.Album", default=list, related_name="albums_users")
-    songs = models.ManyToManyField("songs.Song", default=list, related_name="songs_users")
+    albums = models.ManyToManyField("albums.Album", related_name="albums_users")
+    songs = models.ManyToManyField("songs.Song", related_name="songs_users")
     followers = models.ManyToManyField("self", blank=True, related_name='followers_users', symmetrical=False)
     following = models.ManyToManyField("self", blank=True, related_name='following_users', symmetrical=False)
 

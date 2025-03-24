@@ -45,28 +45,28 @@ class AwsS3Service:
     def save_file_to_s3(self, file):
         try:
             file_extension = os.path.splitext(file.name)[1].lower()
-            allowed_extensions = [".jpg", ".jpeg", ".png", ".mp3"]
             
-            if file_extension not in allowed_extensions:
-                raise ValueError("Only accept files with format JPG, JPEG, PNG, or MP3")
+            allowed_extensions = [".jpg", ".jpeg", ".png", ".mp3", ".mp4", ".avi", ".mov"]
 
-            # Tạo tên file duy nhất
+            if file_extension not in allowed_extensions:
+                raise ValueError("Only accept files with format JPG, JPEG, PNG, MP3, MP4, AVI, or MOV")
+
             s3_file_name = f"{uuid.uuid4()}{file_extension}"
 
-            # Xác định ContentType
             content_type = {
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".png": "image/png",
-            ".mp3": "audio/mpeg"
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".mp3": "audio/mpeg",
+                ".mp4": "video/mp4",
+                ".avi": "video/x-msvideo",
+                ".mov": "video/quicktime",
             }.get(file_extension, "binary/octet-stream")
 
-            # Upload file
             self.s3_client.upload_fileobj(
                 file,
                 self.bucket_name,
                 s3_file_name,
-                # ExtraArgs={"ContentType": content_type, "ACL": "public-read"},
                 ExtraArgs={"ContentType": content_type},
             )
 
@@ -78,6 +78,7 @@ class AwsS3Service:
             raise Exception(f"Error uploading file to S3: {str(e)}")
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
+
 
     def delete_file_from_s3(self, file_url):
         try:

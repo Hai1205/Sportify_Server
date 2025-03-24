@@ -18,7 +18,7 @@ class UploadAlbumView(GenericAPIView):
             user = get_object_or_404(User, id=userId)
             
             title = request.data.get("title")
-            releaseDate = request.data.get("releaseDate")
+            # releaseDate = request.data.get("releaseDate")
             thumbnail = request.FILES.get("thumbnail")
             
             if thumbnail is None:
@@ -31,9 +31,9 @@ class UploadAlbumView(GenericAPIView):
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             
             album = Album.objects.create(
-                user=user,
+                # user=user,
                 title=title,
-                releaseDate=releaseDate,
+                # releaseDate=releaseDate,
                 thumbnailUrl=thumbnailUrl
             )
             
@@ -125,10 +125,11 @@ class DeleteAlbumView(GenericAPIView):
             thumbnailUrl = album.thumbnailUrl
             s3_service.delete_file_from_s3(thumbnailUrl)
             
-            songs = Song.objects.filter(album_id=albumId)
+            songs = album.songs.all()
             for song in songs:
                 s3_service.delete_file_from_s3(song.thumbnailUrl)
                 s3_service.delete_file_from_s3(song.audioUrl)
+                s3_service.delete_file_from_s3(song.videoUrl)
                 song.delete()
             
             album.delete()
@@ -193,7 +194,7 @@ class searchAlbums(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "SearchSearch album successfully",
-                "album": serializer.data
+                "albums": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

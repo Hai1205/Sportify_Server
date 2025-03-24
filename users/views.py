@@ -15,6 +15,7 @@ import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
 from Sportify_Server.services import AwsS3Service, mailService, utils
+
 class CreateUserView(GenericAPIView):
     permission_classes = [IsAdminUser] 
 
@@ -26,7 +27,7 @@ class CreateUserView(GenericAPIView):
                 serializer.save()
                 print(serializer.data["email"])
                 
-                password = utils.generate_password()
+                password = serializer.data["password"]
                 email = serializer.data["email"]
                 mailService.mailResetPassword(email, password)
                 
@@ -158,7 +159,7 @@ class GetUserView(GenericAPIView):
         try:
             user = get_object_or_404(User, id=userId)
             
-            serializer = FullInfoUserSerializer(user)
+            serializer = UserSerializer(user)
         
             return JsonResponse({
                 "status": 200,
@@ -221,11 +222,17 @@ class DeleteUserView(GenericAPIView):
             s3_service = AwsS3Service()
             s3_service.delete_file_from_s3(avatarUrl)
             
-            songs = Song.objects.filter(user_id=userId)
+            songs = user.songs.all()
             for song in songs:
                 s3_service.delete_file_from_s3(song.thumbnailUrl)
                 s3_service.delete_file_from_s3(song.audioUrl)
+                s3_service.delete_file_from_s3(song.videoUrl)
                 song.delete()
+                
+            albums = user.albums.all()
+            for album in albums:
+                s3_service.delete_file_from_s3(album.thumbnailUrl)
+                album.delete()
             
             user.delete()
         
@@ -390,8 +397,9 @@ class SearchUsersView(GenericAPIView):
     def get(self, request):
         try:
             query = request.GET.get('query')
+            print(query)
             
-            users = User.objects.filter(Q(fullName__icontains=query) | Q(username__icontains=query) | Q(email__icontains=query))
+            users = User.objects.filter(Q(fullName__icontains=query) | Q(username__icontains=query) | Q(email__icontains=query), status="active")
             
             serializer = FullInfoUserSerializer(users, many=True)
             
