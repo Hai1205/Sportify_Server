@@ -91,7 +91,7 @@ class LoginWithGoogleSerializer(serializers.Serializer):
         return {
             "refresh_token": str(refresh),
             "access_token": str(refresh.access_token),
-            "user": UserSerializer(user).data,
+            "user": FullInfoUserSerializer(user).data,
         }
         
     def create(self, data):

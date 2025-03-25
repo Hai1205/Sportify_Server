@@ -1,18 +1,5 @@
 from django.urls import path
-from .views import GetAllUserView, \
-                    GetUserView, \
-                    UpdateUserView, \
-                    DeleteUserView, \
-                    getAllUserSongsView, \
-                    FollowUserView, \
-                    GetSuggestedUserView, \
-                    RequireUpdateUserToArtistView, \
-                    ResponseUpdateUserToArtistView, \
-                    SearchUsersView, \
-                    GetArtistApplications, \
-                    DeleteArtistApplicationView, \
-                    GetUserbyRoleView, \
-                    CreateUserView
+from .views import *
 
 urlpatterns = [
     path('create-user/', CreateUserView.as_view(), name='create-user'),

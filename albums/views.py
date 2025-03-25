@@ -1,9 +1,8 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
-from .serializers import FullInfoAlbumSerializer, AlbumSerializer
+from .serializers import *
 from rest_framework.generics import GenericAPIView
 from .models import Album
-from songs.models import Song
 from users.models import User
 from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
@@ -186,8 +185,9 @@ class searchAlbums(GenericAPIView):
     def get(self, request):
         try:
             query = request.GET.get('query')
+            print(query)
             
-            albums = Album.objects.filter(Q(title__icontains=query) | Q(user__fullName__icontains=query))
+            albums = Album.objects.filter(Q(title__icontains=query))
         
             serializer = FullInfoAlbumSerializer(albums, many=True)
         

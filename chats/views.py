@@ -15,7 +15,7 @@ class GetAllMessageView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get all message successfully",
-                "Messages": serializer.data
+                "messages": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
@@ -26,11 +26,12 @@ class GetAllMessageView(GenericAPIView):
 class getMessageView(GenericAPIView):
     def get(self, request, senderId, receiverId):
         try:
-            get_object_or_404(User, senderId)
-            get_object_or_404(User, receiverId)
+            sender = get_object_or_404(User, id=senderId)
+            receiver = get_object_or_404(User, id=receiverId)
+
             
             messages = Message.objects.filter(
-                Q(senderId=senderId, receiverId=receiverId) | Q(senderId=receiverId, receiverId=senderId)
+                Q(sender=sender, receiver=receiver) | Q(sender=receiver, receiver=sender)
             ).order_by("created_at")
 
             serializer = MessageSerializer(messages, many=True)
@@ -38,7 +39,7 @@ class getMessageView(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "Get message successfully",
-                "Message": serializer.data
+                "messages": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

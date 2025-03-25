@@ -2,7 +2,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
 from Sportify_Server.services import AwsS3Service
-from .serializers import FullInfoSongSerializer, SongSerializer
+from .serializers import *
 from .models import Song
 from albums.models import Album
 from users.models import User
@@ -323,8 +323,9 @@ class SearchSongsView(GenericAPIView):
     def get(self, request):
         try:
             query = request.GET.get('query')
+            print(query)
             
-            songs = Song.objects.filter(Q(title__icontains=query) | Q(user__fullName__icontains=query) | Q(album__title__icontains=query))
+            songs = Song.objects.filter(Q(title__icontains=query))
                       
             serializer = FullInfoSongSerializer(songs, many=True)
             

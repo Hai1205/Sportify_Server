@@ -8,7 +8,7 @@ class Album(models.Model):
     songs = models.ManyToManyField("songs.Song", blank=True, related_name='songs_albums')
     title = models.CharField(max_length=255, null=False, blank=False)
     genre = models.CharField(max_length=255, null=False, blank=False, validators=[GenreMixin.validate_genres])
-    releaseDate = models.DateField(default=timezone.now().date, null=False, blank=False)
+    releaseDate = models.DateField(default=timezone.now, null=False, blank=False)
     thumbnailUrl = models.URLField()
     created_at = models.DateTimeField(auto_now_add=True)
     

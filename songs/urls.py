@@ -1,16 +1,5 @@
 from django.urls import path
-from .views import GetAllSongView, \
-    uploadSongView, \
-    GetFeaturedView, \
-    GetMadeForYouView, \
-    GetTrendingView, \
-    GetSongView, \
-    DeleteSongView, \
-    UpdateSongView, \
-    AddSongToAlbumView, \
-    DownloadSongView, \
-    SearchSongsView, \
-    IncreaseSongViewView
+from .views import *
 
 urlpatterns = [
     path('', GetAllSongView.as_view(), name='get-all-song'),

@@ -1,19 +1,13 @@
-# from rest_framework.response import JsonResponse
-from rest_framework.permissions import AllowAny, IsAdminUser
-# from Sportify_Server.permissions import IsArtistUser
+from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, \
-                            LoginWithGoogleSerializer, \
-                            RegisterSerializer, \
-                            ChangePasswordSerializer, \
-                            ForgotPasswordSerializer
+from .serializers import *
 from users.serializers import UserSerializer
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from users.models import User
 from .models import OTP
-from Sportify_Server.services import mailService, utils
+from Sportify_Server.services import *
 
 class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]

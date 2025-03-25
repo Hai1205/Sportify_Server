@@ -1,11 +1,6 @@
 from rest_framework.permissions import IsAdminUser, AllowAny
-from .serializers import UserSerializer, \
-                            FullInfoUserSerializer, \
-                            ResponseUpdateUserToArtistSerializer, \
-                            FullInfoArtistApplicationSerializer, \
-                            CreateUserSerializer
-                            # UpdateUserSerializer, \
-from .models import User, ArtistApplication
+from .serializers import *
+from .models import *
 from songs.models import Song
 from rest_framework.generics import GenericAPIView
 from django.shortcuts import get_object_or_404
@@ -14,7 +9,7 @@ from django.db.models import Q
 import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
-from Sportify_Server.services import AwsS3Service, mailService, utils
+from Sportify_Server.services import *
 
 class CreateUserView(GenericAPIView):
     permission_classes = [IsAdminUser] 
@@ -159,7 +154,7 @@ class GetUserView(GenericAPIView):
         try:
             user = get_object_or_404(User, id=userId)
             
-            serializer = UserSerializer(user)
+            serializer = FullInfoUserSerializer(user)
         
             return JsonResponse({
                 "status": 200,
@@ -397,14 +392,18 @@ class SearchUsersView(GenericAPIView):
     def get(self, request):
         try:
             query = request.GET.get('query')
-            print(query)
             
-            users = User.objects.filter(Q(fullName__icontains=query) | Q(username__icontains=query) | Q(email__icontains=query), status="active")
+            users = User.objects.filter(
+                Q(fullName__icontains=query) | 
+                Q(username__icontains=query) | 
+                Q(email__icontains=query), 
+                status="active"
+            )
             
             serializer = FullInfoUserSerializer(users, many=True)
             
             return JsonResponse({
-                "users": 200,
+                "status": 200,
                 "message": "Search users successfully", 
                 "users": serializer.data
             }, safe=False, status=200)
