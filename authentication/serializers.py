@@ -28,26 +28,24 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self, data):
+    def validate(self, data):  # Bỏ đi
         try:
             username = data.get("username")
             password = data.get("password")
-            
+
             if "@" in username:
                 user = get_object_or_404(User, email=username)
             else:
                 user = get_object_or_404(User, username=username)
-           
-            # Kiểm tra mật khẩu
+
             if not user.check_password(password):
                 raise serializers.ValidationError("Username or password is incorrect.")
 
             if user.status == 'locked':
                 raise serializers.ValidationError("Account is locked.")
-            
+
             if user.status == 'pending':
                 code = utils.generate_OTP()
-                
                 OTP.objects.create(
                     user=user,
                     code=code,
@@ -63,8 +61,7 @@ class LoginSerializer(serializers.Serializer):
                     "isPending": True,
                     "message": "Account is pending verification. Please check your email for the OTP."
                 }
-            
-            # Tạo token JWT
+
             refresh = RefreshToken.for_user(user)
             return {
                 "refresh_token": str(refresh),

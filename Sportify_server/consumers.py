@@ -5,19 +5,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
     user_sockets = {}  # { userId: socket_id }
 
     async def connect(self):
-        self.user_id = self.scope["path"].split("/")[-2]  # Lấy user_id từ URL
-        self.group_name = f"user_{self.user_id}"  # Group dành riêng cho user
+        self.user_id = self.scope["path"].split("/")[-2]
+        self.group_name = f"user_{self.user_id}"
 
-        # Lưu socket của user
         self.user_sockets[self.user_id] = self.channel_name
 
-        # Thêm user vào nhóm riêng
         await self.channel_layer.group_add(self.group_name, self.channel_name)
 
         await self.accept()
         print(f"User {self.user_id} connected.")
 
-        # Gửi danh sách user online ngay khi có kết nối
         await self.send(text_data=json.dumps({
             "type": "users_online",
             "users": list(self.user_sockets.keys())

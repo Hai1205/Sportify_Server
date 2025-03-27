@@ -101,13 +101,10 @@ class SendOTPView(GenericAPIView):
             
             code = utils.generate_OTP()
             
-            otp = OTP.objects.create(
+            OTP.objects.create(
                 user=user,
                 code=code,
             )
-            from django.utils import timezone
-            print("timeExpired " + str(otp.timeExpired))
-            print("timezone.now() " + str(timezone.now()))
                 
             recipient = user.email
             mailService.mailActiveAccount(code, recipient)

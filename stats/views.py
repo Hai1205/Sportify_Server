@@ -17,13 +17,7 @@ class getGeneralStatView(GenericAPIView):
             totalSongs = Song.objects.count()
             totalAlbums = Album.objects.count()
             totalUsers = User.objects.count()
-
-            # Lấy danh sách các artist duy nhất từ cả Song và Album
-            uniqueArtists = (
-                Song.objects.values_list("user", flat=True).distinct()
-            ).union(
-                Album.objects.values_list("user", flat=True).distinct()
-            ).count()
+            totalArtists = User.objects.filter(role="artist").count()
 
             return JsonResponse({
                 "status": 200,
@@ -32,7 +26,7 @@ class getGeneralStatView(GenericAPIView):
                     "totalAlbums": totalAlbums,
                     "totalSongs": totalSongs,
                     "totalUsers": totalUsers,
-                    "totalArtists": uniqueArtists
+                    "totalArtists": totalArtists
                 }
             }, safe=False, status=200)
         except Exception as e:
@@ -41,30 +35,13 @@ class getGeneralStatView(GenericAPIView):
                 "message": str(e)
             }, status=500)
             
-# class getUserActivityStatView(GenericAPIView):
-#     permission_classes = [IsAdminUser]
-
-#     def get(self, request):
-#         try:
-
-#             return JsonResponse({
-#                 "status": 200,
-#                 "message": "Get statistics successfully",
-#             }, safe=False, status=200)
-#         except Exception as e:
-#             return JsonResponse({
-#                 "status": 500,
-#                 "message": str(e)
-#             }, status=500)
-            
 class getPopularSongsStatView(GenericAPIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
         try:
             userLimit = 5
-            songs = Song.objects.filter(Q(user__role="artist")) \
-                .annotate(view_count=Count('views')) \
+            songs = Song.objects.annotate(view_count=Count('views')) \
                 .order_by('-view_count')[:userLimit]
 
             serializer = FullInfoSongSerializer(songs, many=True)

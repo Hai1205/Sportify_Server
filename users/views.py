@@ -15,7 +15,6 @@ class CreateUserView(GenericAPIView):
     permission_classes = [IsAdminUser] 
 
     def post(self, request):
-        
         try:
             serializer = CreateUserSerializer(data=request.data)
             if serializer.is_valid():
@@ -88,10 +87,8 @@ class GetSuggestedUserView(GenericAPIView):
         try:
             currentUser = get_object_or_404(User, id=userId)
 
-            # Lấy danh sách ID người dùng mà currentUser đang follow
             followingIds = currentUser.following.values_list('id', flat=True)
 
-            # Lọc danh sách người dùng gợi ý
             userLimit = 10
             suggestedUsers = User.objects.exclude(id__in=followingIds).exclude(id=userId).order_by('?')[:userLimit]
 
@@ -122,12 +119,10 @@ class FollowUserView(GenericAPIView):
             opponent = get_object_or_404(User, id=opponentId)
 
             if opponent in currentUser.following.all():
-                # Nếu đã follow thì hủy follow
                 currentUser.following.remove(opponent)
                 opponent.followers.remove(currentUser)
                 message = "unfollowed"
             else:
-                # Nếu chưa follow thì thêm vào danh sách follow
                 currentUser.following.add(opponent)
                 opponent.followers.add(currentUser)
                 message = "followed"
@@ -263,11 +258,12 @@ class getAllUserSongsView(GenericAPIView):
     
 class RequireUpdateUserToArtistView(GenericAPIView):
     def get_audio_duration(self, audioUrl):
-        """Lấy thời lượng của file MP3"""
         response = requests.get(audioUrl)
         if response.status_code == 200:
-            audio = MP3(BytesIO(response.content))  # Đọc file MP3 từ memory
-            return audio.info.length  # Thời lượng tính bằng giây
+            audio = MP3(BytesIO(response.content)) 
+            
+            return audio.info.length 
+        
         return None
     
     def post(self, request, userId):
@@ -388,25 +384,56 @@ class ResponseUpdateUserToArtistView(GenericAPIView):
             
 class SearchUsersView(GenericAPIView):
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         try:
-            query = request.GET.get('query')
+            query = request.GET.get('query', '').strip()
+            status = request.GET.get('status', '').strip()
+            role = request.GET.get('role', '').strip()
+            isAdmin = request.GET.get('admin', '').lower() == 'true'
             
-            users = User.objects.filter(
-                Q(fullName__icontains=query) | 
-                Q(username__icontains=query) | 
-                Q(email__icontains=query), 
-                status="active"
-            )
-            
+            filters = Q()
+
+            if not isAdmin:
+                filters &= Q(status="active")
+                
+                if query:
+                    filters &= (
+                        Q(fullName__icontains=query) | 
+                        Q(username__icontains=query) | 
+                        Q(email__icontains=query)
+                    )
+            else:
+                if role:
+                    role_list = role.split(',')
+                    role_filters = Q()
+                    for r in role_list:
+                        role_filters |= Q(role=r.strip())
+                    filters &= role_filters
+
+                if status:
+                    status_list = status.split(',')
+                    status_filters = Q()
+                    for s in status_list:
+                        status_filters |= Q(status__icontains=s.strip())
+                    filters &= status_filters
+
+                if query:
+                    filters &= (
+                        Q(fullName__icontains=query) | 
+                        Q(username__icontains=query) | 
+                        Q(email__icontains=query)
+                    )
+
+            users = User.objects.filter(filters).distinct()
             serializer = FullInfoUserSerializer(users, many=True)
-            
+
             return JsonResponse({
                 "status": 200,
-                "message": "Search users successfully", 
+                "message": "Search users successfully",
                 "users": serializer.data
             }, safe=False, status=200)
+
         except Exception as e:
             return JsonResponse({
                 "status": 500,
@@ -419,11 +446,9 @@ class GetArtistApplications(GenericAPIView):
     def get(self, request):
         try:
             status = request.GET.get('status')
-            print(1)
             artistApplications = ArtistApplication.objects.filter(Q(status__icontains=status))
-            print(2)
             serializer = FullInfoArtistApplicationSerializer(artistApplications, many=True)
-            print(3)
+
             return JsonResponse({
                 "status": 200,
                 "message": f"Get {status} artist applications successfully",

@@ -21,44 +21,39 @@ class uploadSongView(GenericAPIView):
         
         if response.status_code == 200:
             audio = MP3(BytesIO(response.content))
-            
             return audio.info.length
-        
         return None
-        
-    def post(self, request, userId):
+
+    def post(self, request, userId):  # <-- Đổi từ def thành def
         try:
             album = None
             user = get_object_or_404(User, id=userId)
-            
+
             title = request.data.get("title")
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
             video = request.FILES.get("video")
             genre = request.data.get("genre")
             lyrics = request.data.get("lyrics")
-            releaseDate = request.data.get("releaseDate")
             albumId = request.data.get("albumId")
-            
+
             if albumId:
                 album = get_object_or_404(Album, id=albumId)
-            
+
             if thumbnail is None or audio is None:
                 return JsonResponse({
                     "status": 400,
                     "message": "Please upload thumbnail video and audio"
                 }, status=400)
-            
+
             s3_service = AwsS3Service()
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             audioUrl = s3_service.save_file_to_s3(audio)
             videoUrl = s3_service.save_file_to_s3(video)
-            
+
             duration = self.get_audio_duration(audioUrl)
 
             song = Song.objects.create(
-                # user=user,
-                # album=album or None,
                 title=title,
                 thumbnailUrl=thumbnailUrl,
                 audioUrl=audioUrl,
@@ -66,25 +61,24 @@ class uploadSongView(GenericAPIView):
                 duration=duration,
                 lyrics=lyrics,
                 genre=genre,
-                releaseDate=releaseDate,
             )
-            
+
             user.songs.add(song)
             user.save()
-            
+
             if album:
                 album.songs.add(song)
                 album.save()
 
             serializer = SongSerializer(song)
-           
+
             return JsonResponse({
-                "songs": 200,
-                "message": "Added song successfully", 
+                "status": 200,
+                "message": "Added song successfully",
                 "song": serializer.data
             }, safe=False, status=200)
         except Exception as e:
-            raise Exception(f"Unexpected error: {str(e)}")
+            return JsonResponse({"status": 500, "message": f"Unexpected error: {str(e)}"}, status=500)
         
 class GetAllSongView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -305,7 +299,7 @@ class DownloadSongView(GenericAPIView):
             print(title)
             
             s3_service = AwsS3Service()
-            s3_service.download_file_from_s3("https://sportify-clone.s3.amazonaws.com/c842ecc4-12cc-467b-b10c-eb8174ee5f27.mp3", title)
+            s3_service.download_file_from_s3(audioUrl, title)
           
             return JsonResponse({
                 "songs": 200,

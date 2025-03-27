@@ -54,7 +54,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=USER_ROLE_CHOICES, default='user')
     created_at = models.DateTimeField(auto_now_add=True)
    
-    genre = models.JSONField(default=list)
+    genres = models.JSONField(default=list)
     biography = models.CharField(max_length=1000, null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
     instagram = models.CharField(max_length=255, null=True, blank=True)
