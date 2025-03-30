@@ -3,6 +3,7 @@ from Sportify_Server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
 from Sportify_Server.services import AwsS3Service
 from .serializers import *
+from users.serializers import *
 from .models import Song
 from albums.models import Album
 from users.models import User
@@ -347,3 +348,32 @@ class IncreaseSongViewView(GenericAPIView):
                 "status": 500,
                 "message": str(e)
             })
+
+class LikeSongView(GenericAPIView):
+    def post(self, request, userId, songId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            song = get_object_or_404(Song, id=songId)
+
+            if song in user.likedSongs.all():
+                user.likedSongs.remove(song)
+                message = "unliked"
+            else:
+                user.likedSongs.add(song)
+                message = "liked"
+
+            user.save()
+            
+            serializer = FullInfoUserSerializer(user)
+
+            return JsonResponse({
+                "status": 200,
+                "message": f"User {message} successfully",
+                "user": serializer.data
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)

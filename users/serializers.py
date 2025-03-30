@@ -14,6 +14,7 @@ class FullInfoUserSerializer(serializers.ModelSerializer):
     followers = UserSerializer(many=True, read_only=True)
     following = UserSerializer(many=True, read_only=True)
     songs = SongSerializer(many=True, read_only=True)
+    likedSongs = SongSerializer(many=True, read_only=True)
     
     class Meta:
         model = User

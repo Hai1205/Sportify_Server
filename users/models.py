@@ -60,6 +60,7 @@ class User(AbstractUser):
     facebook = models.CharField(max_length=255, null=True, blank=True)
     albums = models.ManyToManyField("albums.Album", related_name="albums_users")
     songs = models.ManyToManyField("songs.Song", related_name="songs_users")
+    likedSongs = models.ManyToManyField("songs.Song", related_name="likedSongs_users")
     followers = models.ManyToManyField("self", blank=True, related_name='followers_users', symmetrical=False)
     following = models.ManyToManyField("self", blank=True, related_name='following_users', symmetrical=False)
     joinDate = models.DateField(default=now)
