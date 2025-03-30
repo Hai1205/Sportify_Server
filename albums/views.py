@@ -17,7 +17,6 @@ class UploadAlbumView(GenericAPIView):
             user = get_object_or_404(User, id=userId)
             
             title = request.data.get("title")
-            # releaseDate = request.data.get("releaseDate")
             thumbnail = request.FILES.get("thumbnail")
             
             if thumbnail is None:
@@ -30,9 +29,7 @@ class UploadAlbumView(GenericAPIView):
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             
             album = Album.objects.create(
-                # user=user,
                 title=title,
-                # releaseDate=releaseDate,
                 thumbnailUrl=thumbnailUrl
             )
             
@@ -153,11 +150,9 @@ class updateAlbum(GenericAPIView):
             title = request.data.get("title")
             thumbnail = request.data.get("thumbnail")
             releaseDate = request.data.get("releaseDate")
-            genre = request.data.get("genre")
             
             album.title = title 
             album.releaseDate = releaseDate
-            album.genre = genre
             
             if thumbnail is not None:
                 s3_service = AwsS3Service()

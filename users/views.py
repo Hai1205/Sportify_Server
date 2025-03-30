@@ -18,21 +18,19 @@ class CreateUserView(GenericAPIView):
         try:
             serializer = CreateUserSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
-                print(serializer.data["email"])
+                user = serializer.save()
                 
-                password = serializer.data["password"]
-                email = serializer.data["email"]
-                mailService.mailResetPassword(email, password)
+                full_info_serializer = FullInfoUserSerializer(user)
                 
                 return JsonResponse({
                     "status": 200,
                     "message": "Create user successfully",
+                    "user": full_info_serializer.data
                 }, status=200)
             
             return JsonResponse({
                     "status": 400,
-                    "message": str(serializer.errors)
+                    "message": "Username or email already exists"
                 }, status=400)
         except Exception as e:
             return JsonResponse({
@@ -60,52 +58,6 @@ class GetAllUserView(GenericAPIView):
                 "message": str(e)
             }, status=500)
             
-class GetUserbyRoleView(GenericAPIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        try:
-            role = request.GET.get('role')
-            
-            users = User.objects.filter(Q(role__icontains=role))
-            
-            serializer = FullInfoUserSerializer(users, many=True)
-        
-            return JsonResponse({
-                "status": 200,
-                "message": f"Get {role} successfully",
-                "users": serializer.data
-            }, safe=False, status=200)
-        except Exception as e:
-            return JsonResponse({
-                "status": 500,
-                "message": str(e)
-            }, status=500)
-
-class GetSuggestedUserView(GenericAPIView):
-    def get(self, request, userId):
-        try:
-            currentUser = get_object_or_404(User, id=userId)
-
-            followingIds = currentUser.following.values_list('id', flat=True)
-
-            userLimit = 10
-            suggestedUsers = User.objects.exclude(id__in=followingIds).exclude(id=userId).order_by('?')[:userLimit]
-
-            serializer = UserSerializer(suggestedUsers, many=True)
-
-            return JsonResponse({
-                "status": 200,
-                "message": "Get suggested user successfully",
-                "users": serializer.data
-            }, status=200)
-
-        except Exception as e:
-            return JsonResponse({
-                "status": 500,
-                "message": str(e)
-            }, status=500)
-
 class FollowUserView(GenericAPIView):
     def post(self, request, currentUserId, opponentId):
         try:
@@ -167,34 +119,27 @@ class UpdateUserView(GenericAPIView):
         try:
             user = get_object_or_404(User, id=userId)
             
-            data = request.data
-            avatar = request.FILES.get("avatar")
+            UPDATABLE_FIELDS = {
+                'fullName', 'country', 'biography', 'role', 'status',
+                'website', 'instagram', 'twitter', 'facebook', 'youtube'
+            }
             
-            if 'fullName' in data:
-                user.fullName = data['fullName']
-            if 'country' in data:
-                user.country = data['country']
-            if 'biography' in data:
-                user.biography = data['biography']
-            if 'role' in data:
-                user.role = data['role']
-            if 'status' in data:
-                user.status = data['status']
+            for field in UPDATABLE_FIELDS:
+                if field in request.data:
+                    setattr(user, field, request.data[field])
             
-            if avatar is not None:
+            if avatar := request.FILES.get("avatar"):
                 s3_service = AwsS3Service()
-                avatarUrl = s3_service.save_file_to_s3(avatar)
-                user.avatarUrl = avatarUrl
+                user.avatarUrl = s3_service.save_file_to_s3(avatar)
 
             user.save()
-            
-            serializer = FullInfoUserSerializer(user)
             
             return JsonResponse({
                 "status": 200,
                 "message": "Updated user successfully",
-                "user": serializer.data
-            }, safe=False, status=200)
+                "user": FullInfoUserSerializer(user).data
+            }, status=200)
+            
         except Exception as e:
             return JsonResponse({
                 "status": 500,
@@ -277,8 +222,6 @@ class RequireUpdateUserToArtistView(GenericAPIView):
             
             user = get_object_or_404(User, id=userId)
             
-            primaryGenre = request.data.get("primaryGenre")
-            secondaryGenre = request.data.get("secondaryGenre")
             biography = request.data.get("biography")
             achievements = request.data.get("achievements")
             
@@ -310,8 +253,6 @@ class RequireUpdateUserToArtistView(GenericAPIView):
             
             artistApplication = ArtistApplication.objects.create(
                 user=user,
-                primaryGenre=primaryGenre,
-                secondaryGenre=secondaryGenre,
                 biography=biography,
                 achievements=achievements,
                 website=website,
@@ -453,6 +394,24 @@ class GetArtistApplications(GenericAPIView):
                 "status": 200,
                 "message": f"Get {status} artist applications successfully",
                 "artistApplications": serializer.data
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetArtistApplication(GenericAPIView):
+    def get(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            artistApplication = ArtistApplication.objects.filter(Q(user=user)).first()
+            serializer = FullInfoArtistApplicationSerializer(artistApplication)
+
+            return JsonResponse({
+                "status": 200,
+                "message": "Get artist application successfully",
+                "artistApplication": serializer.data
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({

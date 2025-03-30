@@ -24,7 +24,7 @@ class uploadSongView(GenericAPIView):
             return audio.info.length
         return None
 
-    def post(self, request, userId):  # <-- Đổi từ def thành def
+    def post(self, request, userId):
         try:
             album = None
             user = get_object_or_404(User, id=userId)
@@ -33,7 +33,6 @@ class uploadSongView(GenericAPIView):
             thumbnail = request.FILES.get("thumbnail")
             audio = request.FILES.get("audio")
             video = request.FILES.get("video")
-            genre = request.data.get("genre")
             lyrics = request.data.get("lyrics")
             albumId = request.data.get("albumId")
 
@@ -60,7 +59,6 @@ class uploadSongView(GenericAPIView):
                 videoUrl=videoUrl,
                 duration=duration,
                 lyrics=lyrics,
-                genre=genre,
             )
 
             user.songs.add(song)
@@ -223,22 +221,16 @@ class UpdateSongView(GenericAPIView):
         try:
             song = get_object_or_404(Song, id=songId)
             
-            # songwriter = request.FILES.get("songwriter")
-            # producer = request.FILES.get("producer")
             albumId = request.data.get("albumId")
             title = request.data.get("title")
             thumbnail = request.FILES.get("thumbnail")
-            genre = request.data.get("genre")
             releaseDate = request.data.get("releaseDate")
             
             if albumId is not None:
                 album = get_object_or_404(Album, id=albumId)
                 song.album = album
             
-            # song.producer = producer
-            # song.songwriter = songwriter
             song.releaseDate = releaseDate
-            song.genre = genre
             song.title = title
             if thumbnail is not None:
                 s3_service = AwsS3Service()

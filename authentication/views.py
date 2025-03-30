@@ -82,7 +82,7 @@ class CheckOTPView(GenericAPIView):
 
             return JsonResponse({
                 "status": 200,
-                "message": "OTP is valid!",
+                "message": "Your account is activated!",
             }, status=200)
 
         except Exception as e:

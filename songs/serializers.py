@@ -12,7 +12,7 @@ class FullInfoSongSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Song
-        fields = ["id", "title", "genre", "releaseDate", "thumbnailUrl", "audioUrl", "videoUrl", "lyrics", "duration", "views", "created_at", "user", "album"]
+        fields = ["id", "title", "releaseDate", "thumbnailUrl", "audioUrl", "videoUrl", "lyrics", "duration", "views", "created_at", "user", "album"]
     
     def get_user(self, obj):
         from users.serializers import UserSerializer

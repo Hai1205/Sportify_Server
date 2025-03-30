@@ -8,7 +8,7 @@ class FullInfoAlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ["id", "title", "genre", "releaseDate", "thumbnailUrl", "created_at", "user", "songs"]
+        fields = ["id", "title", "releaseDate", "thumbnailUrl", "created_at", "user", "songs"]
 
     def get_user(self, obj):
         from users.serializers import UserSerializer

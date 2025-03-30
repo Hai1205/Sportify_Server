@@ -1,14 +1,12 @@
 from django.db import models
 import uuid
-from Sportify_Server.mixin import GenreMixin
 from django.utils import timezone
  
 class Song(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False, blank=False)
 
     title = models.CharField(max_length=255, null=False, blank=False)
-    genre = models.CharField(max_length=255, validators=[GenreMixin.validate_genres], null=False, blank=False)
-    releaseDate = models.DateTimeField(default=timezone.now)
+    releaseDate = models.DateField(default=timezone.now)
 
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()

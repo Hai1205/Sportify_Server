@@ -9,18 +9,21 @@ from .models import OTP
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('fullName', 'username', 'email', 'password')
+        fields = ('username', 'email', 'password')
         extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, data):
-        password = data.pop("password")  # Lấy password ra khỏi data
+        password = data.pop("password")
         if len(password) < 8:
-            raise serializers.ValidationError("Password is atleast 8 charactors.")
+            raise serializers.ValidationError("Password is at least 8 characters.")
        
-        user = User(**data)  # Tạo user nhưng chưa có password
-        user.set_password(password)  # Mã hóa password
-        user.is_staff = False  # Chặn client tự cấp quyền admin
-        user.save()  # Lưu user vào database
+        user = User(
+            **data,
+            fullName=data['username']
+        )
+        user.set_password(password)
+        user.is_staff = False
+        user.save()
         
         return user
     
@@ -28,7 +31,7 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self, data):  # Bỏ đi
+    def validate(self, data):
         try:
             username = data.get("username")
             password = data.get("password")
@@ -41,8 +44,8 @@ class LoginSerializer(serializers.Serializer):
             if not user.check_password(password):
                 raise serializers.ValidationError("Username or password is incorrect.")
 
-            if user.status == 'locked':
-                raise serializers.ValidationError("Account is locked.")
+            if user.status == 'lock':
+                raise serializers.ValidationError("Account is lock.")
 
             if user.status == 'pending':
                 code = utils.generate_OTP()

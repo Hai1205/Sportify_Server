@@ -37,25 +37,6 @@ class CreateUserSerializer(serializers.ModelSerializer):
       
         return user 
 
-# class UpdateUserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ['id', 'fullName', 'country', 'avatarUrl', 'status', 'role', 'biography']
-#         # extra_kwargs = {'password': {'write_only': True}}
-
-#     def update(self, user, validated_data):
-#         password = validated_data.pop("password", None)  # Lấy password nếu có
-#         if password:
-#             user.set_password(password)  # Mã hóa password
-        
-#         fullName = validated_data.pop("fullName", None)  # Lấy fullName nếu có
-#         if fullName:
-#             user.fullName = fullName
-        
-#         user.save()  # Lưu user vào database
-        
-#         return user
-    
 class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArtistApplication
