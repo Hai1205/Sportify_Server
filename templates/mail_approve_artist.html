@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Application</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #22c55e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .button {
+            display: inline-block;
+            background-color: #22c55e;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .highlight {
+            color: #22c55e;
+            font-weight: bold;
+        }
+        .artist-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Artist Application</h1>
+        </div>
+        <div class="content">
+            <p>Dear <strong>{{recipient_name}}</strong>,</p>
+            
+            <p>We are pleased to inform you that we have received your application to join our artistic community. Your portfolio has caught our attention, and we are impressed with your creative vision.</p>
+            
+            <p>We would like to invite you to the next stage of our selection process. Please review the details below and confirm your participation by clicking the button.</p>
+            
+            <p>The next steps include:</p>
+            <ul>
+                <li>A virtual interview with our artistic director</li>
+                <li>A small commissioned piece to evaluate your process</li>
+                <li>Final review by our selection committee</li>
+            </ul>
+            
+            <p>We believe your unique perspective would be a valuable addition to our community of <span class="highlight">creative professionals</span>.</p>
+
+            <p>{{details}}</p>
+            
+            <p>Best regards,<br>
+            <strong>{{sender_name}}</strong><br>
+            <strong>{{organization}}</strong></p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} {{organization}}. All rights reserved.</p>
+            <p>This email was sent to {{recipient_email}}. If you received this by mistake, please disregard this message.</p>
+        </div>
+    </div>
+</body>
+</html>

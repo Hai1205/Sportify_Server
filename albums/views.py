@@ -71,7 +71,7 @@ class GetUserAlbums(GenericAPIView):
     def get(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)
-            albums = user.user_albums.all()
+            albums = user.albums.all()
             
             serializer = FullInfoAlbumSerializer(albums, many=True)
         

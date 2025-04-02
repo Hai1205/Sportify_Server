@@ -213,24 +213,10 @@ class RequireUpdateUserToArtistView(GenericAPIView):
     
     def post(self, request, userId):
         try:
-            isAgree = request.data.get("isAgree")
-            if not isAgree:
-                return JsonResponse({
-                    "status": 400,
-                    "message": "You must agree to the Artist Terms and Conditions"
-                }, status=400)
-            
             user = get_object_or_404(User, id=userId)
             
-            biography = request.data.get("biography")
             achievements = request.data.get("achievements")
             
-            website = request.data.get("website")
-            instagram = request.data.get("instagram")
-            twitter = request.data.get("twitter")
-            facebook = request.data.get("facebook")
-            youtube = request.data.get("youtube")
-           
             song1Title = request.data.get("song1Title")
             song1Audio = request.data.get("song1Audio")
            
@@ -242,6 +228,12 @@ class RequireUpdateUserToArtistView(GenericAPIView):
            
             reason = request.data.get("reason")
             
+            if not (song1Title and song1Audio) and not (song2Title and song2Audio) and not (song3Title and song3Audio):
+                return JsonResponse({
+                    "status": 400,
+                    "message": "At least one song title and audio must be provided."
+                }, status=400)
+                
             s3_service = AwsS3Service()
             song1AudioUrl = s3_service.save_file_to_s3(song1Audio)
             song2AudioUrl = s3_service.save_file_to_s3(song2Audio)
@@ -253,37 +245,29 @@ class RequireUpdateUserToArtistView(GenericAPIView):
             
             artistApplication = ArtistApplication.objects.create(
                 user=user,
-                biography=biography,
                 achievements=achievements,
-                website=website,
-                instagram=instagram,
-                twitter=twitter,
-                facebook=facebook,
-                youtube=youtube,
                 reason=reason,
             )
             
             song1 = Song.objects.create(
-                user=user,
                 title=song1Title,
                 audioUrl=song1AudioUrl,
                 duration=song1Duration,
             )
             
             song2 = Song.objects.create(
-                user=user,
                 title=song2Title,
                 audioUrl=song2AudioUrl,
                 duration=song2Duration,
             )
             
             song3 = Song.objects.create(
-                user=user,
                 title=song3Title,
                 audioUrl=song3AudioUrl,
                 duration=song3Duration,
             )
             
+            user.songs.set([song1, song2, song3])
             artistApplication.songs.set([song1, song2, song3])
 
             return JsonResponse({
@@ -303,7 +287,7 @@ class ResponseUpdateUserToArtistView(GenericAPIView):
         try:
             application = get_object_or_404(ArtistApplication, id=applicationId)
             
-            serializer = ResponseUpdateUserToArtistSerializer(application, data=request.data)
+            serializer = ResponseUpdateUserToArtistSerializer(application, data=request.data, context={'request': request})
         
             if serializer.is_valid():
                 serializer.save()
@@ -387,7 +371,11 @@ class GetArtistApplications(GenericAPIView):
     def get(self, request):
         try:
             status = request.GET.get('status')
-            artistApplications = ArtistApplication.objects.filter(Q(status__icontains=status))
+            print(status)
+            if status:
+                artistApplications = ArtistApplication.objects.filter(Q(status__icontains=status))
+            else:
+                artistApplications = ArtistApplication.objects.all()
             serializer = FullInfoArtistApplicationSerializer(artistApplications, many=True)
 
             return JsonResponse({

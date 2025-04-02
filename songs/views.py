@@ -223,16 +223,17 @@ class UpdateSongView(GenericAPIView):
             song = get_object_or_404(Song, id=songId)
             
             albumId = request.data.get("albumId")
-            title = request.data.get("title")
             thumbnail = request.FILES.get("thumbnail")
-            releaseDate = request.data.get("releaseDate")
+            title = request.data.get("title")
+            lyrics = request.data.get("lyrics")
             
             if albumId is not None:
                 album = get_object_or_404(Album, id=albumId)
                 song.album = album
             
-            song.releaseDate = releaseDate
             song.title = title
+            song.lyrics = lyrics
+            
             if thumbnail is not None:
                 s3_service = AwsS3Service()
                 thumbnailUrl = s3_service.save_file_to_s3(thumbnail)

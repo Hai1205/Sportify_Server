@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import User, ArtistApplication
 from albums.serializers import AlbumSerializer
 from songs.serializers import SongSerializer
+from Sportify_Server.services import mailService
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,16 +42,35 @@ class CreateUserSerializer(serializers.ModelSerializer):
 class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArtistApplication
-        fields = ['id', 'status']
+        fields = ['id', 'status', 'rejectionReason', 'details']
 
     def update(self, application, data):
+        request = self.context.get('request')
         status = data.get("status")
+        rejectionReason = data.get("rejectionReason")
+        details = data.get("details")
         
         application.status = status
         
-        if status == "approved":
+        if status == "approve":
             application.user.role = "artist"
+            application.details = details
             application.user.save()
+            
+            recipient_email = application.user.email
+            recipient_name = application.user.fullName
+            sender_name = request.user.fullName
+            mailService.mailApproveArtist(recipient_name, sender_name, recipient_email, details)
+            
+        if status == "reject":
+            application.rejectionReason = rejectionReason
+            application.details = details
+            application.user.save()
+            
+            recipient_email = application.user.email
+            recipient_name = application.user.fullName
+            sender_name = request.user.fullName
+            mailService.mailRejectArtist(recipient_name, sender_name, recipient_email, details, rejectionReason)
         
         application.save()
         

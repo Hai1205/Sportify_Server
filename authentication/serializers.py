@@ -33,6 +33,7 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         try:
+            request = self.context.get('request')
             username = data.get("username")
             password = data.get("password")
 
@@ -54,8 +55,10 @@ class LoginSerializer(serializers.Serializer):
                     code=code,
                 )
                 
-                recipient = user.email
-                mailService.mailActiveAccount(code, recipient)
+                recipient_email = user.email
+                recipient_name = user.fullName
+                sender_name = request.user.fullName
+                mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
                 
                 return {
                     "refresh_token": None,
@@ -84,6 +87,8 @@ class LoginWithGoogleSerializer(serializers.Serializer):
 
         user = User.objects.filter(email=email).first()
         if not user:
+            username = email.split("@")[0]
+            data['username'] = username
             user = self.create(data)
 
         refresh = RefreshToken.for_user(user)
@@ -97,10 +102,11 @@ class LoginWithGoogleSerializer(serializers.Serializer):
     def create(self, data):
         password = utils.generate_password()
         email = data.get("email")
+        username = data.get("username", email)
        
         user = User(**data)
         user.set_password(password)
-        user.username = email
+        user.username = username
         user.status = 'active'
         user.is_staff = False
         user.save()
@@ -116,30 +122,30 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = get_object_or_404(User, id=userId)
 
         currentPassword = data["currentPassword"]
-        newPassword = data["newPassword"]
-        rePassword = data["rePassword"]
-
         if not user.check_password(currentPassword):
             raise serializers.ValidationError("Password is incorrect.")
         
+        newPassword = data["newPassword"]
+        rePassword = data["rePassword"]
         if newPassword != rePassword:
             raise serializers.ValidationError("Password does not match.")
 
-        user.set_password(newPassword)  # Mã hóa mật khẩu mới
-        user.save()  # Lưu vào database
+        user.set_password(newPassword)
+        user.save()
         
         return user
     
 class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.CharField(write_only=True)
     newPassword = serializers.CharField(write_only=True)
     rePassword = serializers.CharField(write_only=True)
 
-    def update(self, userId, data):
-        user = get_object_or_404(User, id=userId)
+    def update(self, data):
+        email = data["email"]
+        user = get_object_or_404(User, email=email)
 
         newPassword = data["newPassword"]
         rePassword = data["rePassword"]
-
         if newPassword != rePassword:
             raise serializers.ValidationError("Password does not match.")
 

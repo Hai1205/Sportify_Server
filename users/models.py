@@ -63,7 +63,7 @@ class User(AbstractUser):
     likedSongs = models.ManyToManyField("songs.Song", related_name="likedSongs_users")
     followers = models.ManyToManyField("self", blank=True, related_name='followers_users', symmetrical=False)
     following = models.ManyToManyField("self", blank=True, related_name='following_users', symmetrical=False)
-    joinDate = models.DateField(default=now)
+    joinDate = models.DateField(auto_now_add=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -71,8 +71,7 @@ class User(AbstractUser):
         db_table = "users"
 
     def __str__(self):
-        return f"{self.id}, {self.role}, {self.is_staff}"
-
+        return f"{self.id}, {self.role}, {self.is_staff}, {self.fullName}"
 
 class ArtistApplication(models.Model):
     APPLICATION_STATUS_CHOICE = [
@@ -88,7 +87,11 @@ class ArtistApplication(models.Model):
     achievements = models.CharField(max_length=1000)
     reason = models.CharField(max_length=1000)
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICE, default='pending')
+    submitDate = models.DateField(auto_now_add=True)
 
+    rejectionReason = models.CharField(max_length=50)
+    details = models.CharField(max_length=1000)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

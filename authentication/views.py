@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from users.models import User
 from .models import OTP
 from Sportify_Server.services import *
+from rest_framework.response import Response
+from rest_framework import status
 
 class RegisterView(GenericAPIView):
     permission_classes = [AllowAny]
@@ -27,8 +29,10 @@ class RegisterView(GenericAPIView):
                     code=code,
                 )
                 
-                recipient = userData["email"]
-                mailService.mailActiveAccount(code, recipient)
+                recipient_email = userData["email"]
+                recipient_name = userData["fullName"]
+                sender_name = request.user.fullName
+                mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
                 
                 return JsonResponse({
                     "status": 200,
@@ -106,8 +110,10 @@ class SendOTPView(GenericAPIView):
                 code=code,
             )
                 
-            recipient = user.email
-            mailService.mailActiveAccount(code, recipient)
+            recipient_email = user.email
+            recipient_name = user.fullName
+            sender_name = request.user.fullName
+            mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
 
             return JsonResponse({
                 "status": 200,
@@ -149,7 +155,7 @@ class LoginView(GenericAPIView):
                     key="access_token",
                     value=data["access_token"],
                     httponly=True,
-                    secure=False,  # Đặt thành False nếu không dùng HTTPS
+                    secure=False,  
                     samesite="Lax"
                 )
                 response.set_cookie(
@@ -162,7 +168,6 @@ class LoginView(GenericAPIView):
 
                 return response
 
-            # Nếu có lỗi, kiểm tra user trước khi truy cập
             return JsonResponse({
                 "status": 400,
                 "message": "Username or password is incorrect.",
@@ -182,7 +187,7 @@ class LoginWithGoogleView(GenericAPIView):
 
     def post(self, request):
         try:
-            serializer = LoginWithGoogleSerializer(data=request.data)
+            serializer = LoginWithGoogleSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 data = serializer.validated_data
 
@@ -193,7 +198,6 @@ class LoginWithGoogleView(GenericAPIView):
                     "isVerified": True,
                 }, status=200)
 
-                # Lưu token vào cookies
                 response.set_cookie(
                     key="access_token",
                     value=data["access_token"],
@@ -232,7 +236,6 @@ class LogoutView(GenericAPIView):
                 "message": "Logout user successfully"
             }, status=200)
 
-            # Xóa token khỏi cookies
             response.delete_cookie('refresh_token')
             response.delete_cookie('access_token')
 
@@ -348,15 +351,15 @@ class ChangePasswordView(GenericAPIView):
 class ForgotPasswordView(GenericAPIView):
     permission_classes = [AllowAny]
     
-    def put(self, request, userId):
+    def put(self, request):
         try:
-            serializer = ForgotPasswordSerializer(userId, data=request.data)
+            serializer = ForgotPasswordSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
+                user = serializer.update(serializer.validated_data)
                 
                 return JsonResponse({
                     "status": 200,
-                    "message": "Forgot password successfully",
+                    "message": "Password updated successfully",
                 }, safe=False, status=200)
             
             return JsonResponse({
@@ -370,17 +373,23 @@ class ForgotPasswordView(GenericAPIView):
             }, status=500)
             
 class ResetPasswordView(GenericAPIView):
-    permission_classes = [AllowAny]
-    
-    def post(self, request, userId):
+    def put(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)
             
             password = utils.generate_password()
-            email = user.email
-            mailService.mailResetPassword(email, password)
+            recipient_email = user.email
+            recipient_name = user.fullName
+            sender_name = request.user.fullName
+            mailService.mailResetPassword(recipient_email, password, recipient_name, sender_name)
+
+            return Response({
+                "status": 200,
+                "message": "Password reset email sent successfully."
+            }, status=status.HTTP_200_OK)
+
         except Exception as e:
-            return JsonResponse({
+            return Response({
                 "status": 500,
                 "message": str(e)
-            }, status=500)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
