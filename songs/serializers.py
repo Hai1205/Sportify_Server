@@ -29,3 +29,18 @@ class FullInfoSongSerializer(serializers.ModelSerializer):
         album = Album.objects.filter(songs=obj).first()
         
         return AlbumSerializer(album).data if album else None
+
+class UserInfoSongSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Song
+        fields = ["id", "title", "releaseDate", "thumbnailUrl", "audioUrl", "videoUrl", "lyrics", "duration", "views", "created_at", "user"]
+    
+    def get_user(self, obj):
+        from users.serializers import UserSerializer
+        from users.models import User
+        
+        user = User.objects.filter(songs=obj).first()
+        
+        return UserSerializer(user).data if user else None

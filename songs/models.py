@@ -1,12 +1,11 @@
 from django.db import models
 import uuid
-from django.utils import timezone
  
 class Song(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False, blank=False)
 
     title = models.CharField(max_length=255, null=False, blank=False)
-    releaseDate = models.DateField(default=timezone.now)
+    releaseDate = models.DateField(auto_now_add=True)
 
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()

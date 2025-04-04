@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import User, ArtistApplication
 from albums.serializers import AlbumSerializer
-from songs.serializers import SongSerializer
+from songs.serializers import SongSerializer, FullInfoSongSerializer
 from Sportify_Server.services import mailService
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class FullInfoUserSerializer(serializers.ModelSerializer):
     albums = AlbumSerializer(many=True, read_only=True)
     followers = UserSerializer(many=True, read_only=True)
     following = UserSerializer(many=True, read_only=True)
-    songs = SongSerializer(many=True, read_only=True)
+    songs = FullInfoSongSerializer(many=True, read_only=True)
     likedSongs = SongSerializer(many=True, read_only=True)
     
     class Meta:

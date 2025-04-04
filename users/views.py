@@ -97,6 +97,8 @@ class FollowUserView(GenericAPIView):
             }, status=500)
 
 class GetUserView(GenericAPIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, userId):
         try:
             user = get_object_or_404(User, id=userId)

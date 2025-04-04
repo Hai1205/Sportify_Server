@@ -13,6 +13,8 @@ import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
 from django.db.models import Q
+from rest_framework.views import APIView
+from django.db import connection
 
 class uploadSongView(GenericAPIView):
     permission_classes = [IsAdminUser or IsArtistUser]
@@ -100,6 +102,8 @@ class GetAllSongView(GenericAPIView):
             }, status=500)
     
 class GetSongView(GenericAPIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, songId):
         try:
             song = get_object_or_404(Song, id=songId)
@@ -227,9 +231,13 @@ class UpdateSongView(GenericAPIView):
             title = request.data.get("title")
             lyrics = request.data.get("lyrics")
             
-            if albumId is not None:
+            if albumId == "none":
+                album = Album.objects.filter(songs=song).first()
+                if album:
+                    album.songs.remove(song)
+            elif albumId != "":
                 album = get_object_or_404(Album, id=albumId)
-                song.album = album
+                album.songs.add(song)
             
             song.title = title
             song.lyrics = lyrics
@@ -373,6 +381,26 @@ class LikeSongView(GenericAPIView):
                 "user": serializer.data
             }, status=200)
 
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetUserLikedSongView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+
+            serializer = FullInfoSongSerializer(user.likedSongs, many=True)
+        
+            return JsonResponse({
+                "songs": 200,
+                "message": "Get user liked songs successfully", 
+                "songs": serializer.data
+            }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
                 "status": 500,

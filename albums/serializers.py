@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from songs.serializers import SongSerializer
+from songs.serializers import UserInfoSongSerializer
 from .models import Album
 
 class FullInfoAlbumSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
-    songs = SongSerializer(many=True, read_only=True)
+    songs = UserInfoSongSerializer(many=True, read_only=True)
 
     class Meta:
         model = Album
