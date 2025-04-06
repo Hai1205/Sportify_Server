@@ -288,7 +288,7 @@ class ResponseUpdateUserToArtistView(GenericAPIView):
     def put(self, request, applicationId):
         try:
             application = get_object_or_404(ArtistApplication, id=applicationId)
-            
+
             serializer = ResponseUpdateUserToArtistSerializer(application, data=request.data, context={'request': request})
         
             if serializer.is_valid():
@@ -296,12 +296,13 @@ class ResponseUpdateUserToArtistView(GenericAPIView):
 
                 return JsonResponse({
                     "status": 200,
-                    "message": "Responsed update user to artist successfully",
+                    "message": "Responded update user to artist successfully",
+                    "application": serializer.data
                 }, status=200)
             
             return JsonResponse({
                 "status": 400,
-                "message": {serializer.errors}
+                "message": serializer.errors
             }, status=400)
         except Exception as e:
             return JsonResponse({
@@ -373,9 +374,10 @@ class GetArtistApplications(GenericAPIView):
     def get(self, request):
         try:
             status = request.GET.get('status')
-            print(status)
+
             if status:
-                artistApplications = ArtistApplication.objects.filter(Q(status__icontains=status))
+                status_list = status.split(',')
+                artistApplications = ArtistApplication.objects.filter(Q(status__in=status_list))
             else:
                 artistApplications = ArtistApplication.objects.all()
             serializer = FullInfoArtistApplicationSerializer(artistApplications, many=True)

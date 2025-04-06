@@ -1,9 +1,11 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
 from Sportify_Server.permissions import IsArtistUser
 from .serializers import *
+from users.serializers import *
 from rest_framework.generics import GenericAPIView
 from .models import Album
 from users.models import User
+from songs.models import Song
 from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -147,14 +149,19 @@ class updateAlbum(GenericAPIView):
     
     def put(self, request, albumId):
         try:
+            import json
             album = get_object_or_404(Album, id=albumId)
             
             title = request.data.get("title")
             thumbnail = request.data.get("thumbnail")
-            releaseDate = request.data.get("releaseDate")
+            songIds = json.loads(request.data.get("songIds", "[]"))
             
             album.title = title 
-            album.releaseDate = releaseDate
+            
+            album.songs.clear()
+            for songId in songIds:
+                song = get_object_or_404(Song, id=songId)
+                album.songs.add(song)
             
             if thumbnail is not None:
                 s3_service = AwsS3Service()
@@ -191,6 +198,55 @@ class searchAlbums(GenericAPIView):
             return JsonResponse({
                 "status": 200,
                 "message": "SearchSearch album successfully",
+                "albums": serializer.data
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class LikeSongView(GenericAPIView):
+    def post(self, request, userId, albumId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            album = get_object_or_404(Album, id=albumId)
+
+            if album in user.likedAlbums.all():
+                user.likedAlbums.remove(album)
+                message = "unliked"
+            else:
+                user.likedAlbums.add(album)
+                message = "liked"
+
+            user.save()
+            
+            serializer = FullInfoUserSerializer(user)
+
+            return JsonResponse({
+                "status": 200,
+                "message": f"User {message} album successfully",
+                "user": serializer.data
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetUserLikedAlbumView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+
+            serializer = FullInfoAlbumSerializer(user.likedAlbums, many=True)
+        
+            return JsonResponse({
+                "albums": 200,
+                "message": "Get user liked albums successfully", 
                 "albums": serializer.data
             }, safe=False, status=200)
         except Exception as e:

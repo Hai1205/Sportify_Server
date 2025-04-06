@@ -16,7 +16,8 @@ class FullInfoUserSerializer(serializers.ModelSerializer):
     following = UserSerializer(many=True, read_only=True)
     songs = FullInfoSongSerializer(many=True, read_only=True)
     likedSongs = SongSerializer(many=True, read_only=True)
-    
+    likedAlbums = AlbumSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
         fields = '__all__'
@@ -46,15 +47,16 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
 
     def update(self, application, data):
         request = self.context.get('request')
-        status = data.get("status")
-        rejectionReason = data.get("rejectionReason")
+        status = data.get("status") 
         details = data.get("details")
+        rejectionReason = data.get("rejectionReason")
         
         application.status = status
+        application.details = details
+        application.rejectionReason = rejectionReason
         
         if status == "approve":
             application.user.role = "artist"
-            application.details = details
             application.user.save()
             
             recipient_email = application.user.email
@@ -63,8 +65,8 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
             mailService.mailApproveArtist(recipient_name, sender_name, recipient_email, details)
             
         if status == "reject":
-            application.rejectionReason = rejectionReason
-            application.details = details
+            
+            application.user.role = "user"
             application.user.save()
             
             recipient_email = application.user.email
@@ -73,7 +75,6 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
             mailService.mailRejectArtist(recipient_name, sender_name, recipient_email, details, rejectionReason)
         
         application.save()
-        
         return application
 
 class ArtistApplicationSerializer(serializers.ModelSerializer):

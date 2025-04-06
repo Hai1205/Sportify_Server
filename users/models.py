@@ -61,6 +61,7 @@ class User(AbstractUser):
     albums = models.ManyToManyField("albums.Album", related_name="albums_users")
     songs = models.ManyToManyField("songs.Song", related_name="songs_users")
     likedSongs = models.ManyToManyField("songs.Song", related_name="likedSongs_users")
+    likedAlbums = models.ManyToManyField("albums.Album", related_name="likedAlbums_users")
     followers = models.ManyToManyField("self", blank=True, related_name='followers_users', symmetrical=False)
     following = models.ManyToManyField("self", blank=True, related_name='following_users', symmetrical=False)
     joinDate = models.DateField(auto_now_add=True)
@@ -76,7 +77,7 @@ class User(AbstractUser):
 class ArtistApplication(models.Model):
     APPLICATION_STATUS_CHOICE = [
         ('pending', 'Pending'),
-        ('approved', 'Approved'),
+        ('approve', 'Approve'),
         ('reject', 'Reject'),
     ]
 
@@ -89,8 +90,8 @@ class ArtistApplication(models.Model):
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICE, default='pending')
     submitDate = models.DateField(auto_now_add=True)
 
-    rejectionReason = models.CharField(max_length=50)
-    details = models.CharField(max_length=1000)
+    rejectionReason = models.CharField(max_length=50, null=False, blank=True)
+    details = models.CharField(max_length=1000, null=False, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -12,8 +12,9 @@ urlpatterns = [
     path('update-song/<uuid:songId>/', UpdateSongView.as_view(), name='update-song'),
     path('add-song-to-album/<uuid:songId>/<uuid:albumId>/', AddSongToAlbumView.as_view(), name='add-song-to-album'),
     path('like-song/<uuid:userId>/<uuid:songId>/', LikeSongView.as_view(), name='like-song'),
-    path('get-user-liked-song/<uuid:userId>/', GetUserLikedSongView.as_view(), name='get-user-liked-song'),
+    path('get-user-liked-songs/<uuid:userId>/', GetUserLikedSongView.as_view(), name='get-user-liked-song'),
     path('download-song/<uuid:songId>/', DownloadSongView.as_view(), name='download-song'),
     path('search-songs/', SearchSongsView.as_view(), name='search-songs'),
     path('increase-song-view/<uuid:songId>/', IncreaseSongViewView.as_view(), name='increase-song-view'),
+    path('get-user-songs/<uuid:userId>/', GetUserSongs.as_view(), name='get-user-songs'),
 ]

@@ -39,10 +39,10 @@ class uploadSongView(GenericAPIView):
             lyrics = request.data.get("lyrics")
             albumId = request.data.get("albumId")
 
-            if albumId:
+            if albumId and albumId != "none":
                 album = get_object_or_404(Album, id=albumId)
 
-            if thumbnail is None or audio is None:
+            if thumbnail is None or audio is None or video is None:
                 return JsonResponse({
                     "status": 400,
                     "message": "Please upload thumbnail video and audio"
@@ -71,7 +71,7 @@ class uploadSongView(GenericAPIView):
                 album.songs.add(song)
                 album.save()
 
-            serializer = SongSerializer(song)
+            serializer = FullInfoSongSerializer(song)
 
             return JsonResponse({
                 "status": 200,
@@ -220,7 +220,14 @@ class GetMadeForYouView(GenericAPIView):
             }, status=500)
 
 class UpdateSongView(GenericAPIView):
-    permission_classes = [IsAdminUser | IsArtistUser]
+    # permission_classes = [IsAdminUser | IsArtistUser]
+    def get_audio_duration(self, audioUrl):
+        response = requests.get(audioUrl)
+        
+        if response.status_code == 200:
+            audio = MP3(BytesIO(response.content))
+            return audio.info.length
+        return None
     
     def put(self, request, songId):
         try:
@@ -228,14 +235,17 @@ class UpdateSongView(GenericAPIView):
             
             albumId = request.data.get("albumId")
             thumbnail = request.FILES.get("thumbnail")
+            audio = request.FILES.get("audio")
+            video = request.FILES.get("video")
             title = request.data.get("title")
             lyrics = request.data.get("lyrics")
             
-            if albumId == "none":
-                album = Album.objects.filter(songs=song).first()
+            album = Album.objects.filter(songs=song).first()
+            if albumId == "none" and album:
+                album.songs.remove(song)
+            elif albumId and albumId != "none":
                 if album:
                     album.songs.remove(song)
-            elif albumId != "":
                 album = get_object_or_404(Album, id=albumId)
                 album.songs.add(song)
             
@@ -246,6 +256,16 @@ class UpdateSongView(GenericAPIView):
                 s3_service = AwsS3Service()
                 thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
                 song.thumbnailUrl = thumbnailUrl
+                
+            if thumbnail is not None:
+                s3_service = AwsS3Service()
+                audioUrl = s3_service.save_file_to_s3(audio)
+                song.audioUrl = audioUrl
+
+            if video is not None:
+                s3_service = AwsS3Service()
+                videoUrl = s3_service.save_file_to_s3(video)
+                song.videoUrl = videoUrl
             
             song.save()
             
@@ -341,6 +361,7 @@ class IncreaseSongViewView(GenericAPIView):
 
     def put(self, request, songId):
         try:
+            print("increase song view")
             song = get_object_or_404(Song, id=songId)
             song.views += 1
             song.save(update_fields=['views'])
@@ -377,7 +398,7 @@ class LikeSongView(GenericAPIView):
 
             return JsonResponse({
                 "status": 200,
-                "message": f"User {message} successfully",
+                "message": f"User {message} song successfully",
                 "user": serializer.data
             }, status=200)
 
@@ -399,6 +420,25 @@ class GetUserLikedSongView(GenericAPIView):
             return JsonResponse({
                 "songs": 200,
                 "message": "Get user liked songs successfully", 
+                "songs": serializer.data
+            }, safe=False, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "status": 500,
+                "message": str(e)
+            }, status=500)
+            
+class GetUserSongs(GenericAPIView):
+    def get(self, request, userId):
+        try:
+            user = get_object_or_404(User, id=userId)
+            songs = user.songs.all()
+            
+            serializer = FullInfoSongSerializer(songs, many=True)
+        
+            return JsonResponse({
+                "status": 200,
+                "message": "Get user songs successfully",
                 "songs": serializer.data
             }, safe=False, status=200)
         except Exception as e:
