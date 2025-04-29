@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAdminUser
 from .serializers import AlbumSerializer
 from rest_framework.generics import GenericAPIView
 from .models import Album
-from api.aws_s3_service import AwsS3Service
+from Sportify_server.aws_s3_service import AwsS3Service
 from django.shortcuts import get_object_or_404
 
 class CreateAlbumView(GenericAPIView):

@@ -62,7 +62,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'Sportify-Server.middlewares.JWTAuthenticationMiddleware',
+    'Sportify_server.middlewares.JWTAuthenticationMiddleware',
 ]
 
 SIMPLE_JWT = {
@@ -97,7 +97,7 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-ROOT_URLCONF = 'Sportify-Server.urls'
+ROOT_URLCONF = 'Sportify_server.urls'
 
 TEMPLATES = [
     {
@@ -115,7 +115,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Sportify-Server.wsgi.application'
+WSGI_APPLICATION = 'Sportify_server.wsgi.application'
 
 
 # Database

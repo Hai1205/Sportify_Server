@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from .serializers import SongSerializer
 from rest_framework.generics import GenericAPIView
 from .models import Song
-from api.aws_s3_service import AwsS3Service
+from Sportify_server.aws_s3_service import AwsS3Service
 from django.shortcuts import get_object_or_404
 
 class AddSongView(GenericAPIView):
