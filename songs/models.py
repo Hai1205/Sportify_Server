@@ -1,19 +1,24 @@
 from django.db import models
-from albums.models import Album
 import uuid
-
+ 
 class Song(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False, blank=False)
-    album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="songs")
+
     title = models.CharField(max_length=255, null=False, blank=False)
-    description = models.CharField(max_length=255, null=False, blank=False)
-    singer = models.CharField(max_length=255, null=False, blank=False)
+    releaseDate = models.DateField(auto_now_add=True)
+
     thumbnailUrl = models.URLField()
     audioUrl = models.URLField()
+    videoUrl = models.URLField()
+
+    lyrics = models.CharField(max_length=8000, null=False, blank=False, default="")
+    duration = models.IntegerField(null=False, blank=False, default=0)
+    views = models.PositiveIntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "songs"
 
     def __str__(self):
-        return self.id
+        return str(self.id)

@@ -1,10 +1,18 @@
 from django.urls import path
-from .views import GetAllUserView, GetUserByIdView, UpdateUserByIdView, DeleteUserByIdView, GetSongByIdView
+from .views import *
 
 urlpatterns = [
-    path('get-user-list/', GetAllUserView.as_view(), name='get-user-list'),
-    path('get-user-by-id/<uuid:userId>/', GetUserByIdView.as_view(), name='get-user-by-id'),
-    path('update-user-by-id/<uuid:userId>/', UpdateUserByIdView.as_view(), name='update-user-by-id'),
-    path('delete-user-by-id/<uuid:userId>/', DeleteUserByIdView.as_view(), name='delete-user-by-id'),
-    path('get-song-by-user-id/<uuid:userId>/', GetSongByIdView.as_view(), name='get-song-by-user-id'),
+    path('create-user/', CreateUserView.as_view(), name='create-user'),
+    path('', GetAllUserView.as_view(), name='get-all-user'),
+    path('get-user/<uuid:userId>/', GetUserView.as_view(), name='get-user'),
+    path('update-user/<uuid:userId>/', UpdateUserView.as_view(), name='update-user'),
+    path('delete-user/<uuid:userId>/', DeleteUserView.as_view(), name='delete-user'),
+    path('follow-user/<uuid:currentUserId>/<uuid:opponentId>/', FollowUserView.as_view(), name='follow-user'),
+    path('get-user-songs/<uuid:userId>/', getAllUserSongsView.as_view(), name='get-user-songs'),
+    path('require-update-user-to-artist/<uuid:userId>/', RequireUpdateUserToArtistView.as_view(), name='require-update-user-to-artist'),
+    path('response-update-user-to-artist/<uuid:applicationId>/', ResponseUpdateUserToArtistView.as_view(), name='response-update-user-to-artist'),
+    path('search-users/', SearchUsersView.as_view(), name='search-users'),
+    path('get-artist-applications/', GetArtistApplications.as_view(), name='get-artist-applications'),
+    path('get-artist-application/<uuid:userId>/', GetArtistApplication.as_view(), name='get-artist-application'),
+    path('delete-artist-application/<uuid:applicationId>/', DeleteArtistApplicationView.as_view(), name='delete-artist-application'),
 ]

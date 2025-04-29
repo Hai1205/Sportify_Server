@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Application Status</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #22c55e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .button {
+            display: inline-block;
+            background-color: #22c55e;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .highlight {
+            color: #22c55e;
+            font-weight: bold;
+        }
+        .artist-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Artist Application Status</h1>
+        </div>
+        <div class="content">
+            <p>Dear <strong>{{recipient_name}}</strong>,</p>
+            
+            <p>Thank you for your interest in joining our artistic community and for taking the time to submit your portfolio. We appreciate the opportunity to review your work and learn about your creative journey.</p>
+            
+            <p>After careful consideration of your application, we regret to inform you that we are unable to accept your application to become an artist with <strong>{{organization}}</strong> at this time.</p>
+            
+            <p>Please understand that this decision does not diminish the quality or value of your work. We receive many applications from talented artists, and our selection process is influenced by various factors including:</p>
+            <ul>
+                <li>Current artistic needs of our organization</li>
+                <li>Stylistic fit with our existing portfolio</li>
+                <li>Limited positions available at this time</li>
+            </ul>
+            
+            <p>We encourage you to continue developing your <span class="highlight">unique artistic voice</span> and consider applying again in the future. Many successful artists in our community were accepted after multiple applications as they refined their craft.</p>
+
+            <p>Reason: {{reason_reject}}</p>
+
+            <p>{{details}}</p>
+            
+            <p>We wish you the very best in your artistic endeavors.</p>
+            
+            <p>Best regards,<br>
+            <strong>{{sender_name}}</strong><br>
+            <strong>{{organization}}</strong></p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} {{organization}}. All rights reserved.</p>
+            <p>This email was sent to {{recipient_email}}. If you received this by mistake, please disregard this message.</p>
+        </div>
+    </div>
+</body>
+</html>

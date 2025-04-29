@@ -1,9 +1,20 @@
 from django.urls import path
-from .views import GetAllSongView, AddSongView, GetSongByIdView, DeleteSongByIdView
+from .views import *
 
 urlpatterns = [
-    path('get-all-song/', GetAllSongView.as_view(), name='get-all-song'),
-    path('add-song/<uuid:albumId>/', AddSongView.as_view(), name='add-song'),
-    path('get-song-by-id/<uuid:songId>/', GetSongByIdView.as_view(), name='get-song-by-id'),
-    path('delete-song-by-id/<uuid:songId>/', DeleteSongByIdView.as_view(), name='delete-song-by-id'),
+    path('', GetAllSongView.as_view(), name='get-all-song'),
+    path('upload-song/<uuid:userId>/', uploadSongView.as_view(), name='upload-song'),
+    path('delete-song/<uuid:songId>/', DeleteSongView.as_view(), name='delete-song'),
+    path('get-song/<uuid:songId>/', GetSongView.as_view(), name='get-song'),
+    path('get-featured-songs/', GetFeaturedView.as_view(), name='get-featured-songs'),
+    path('get-made-for-you-songs/', GetMadeForYouView.as_view(), name='get-made-for-you-songs'),
+    path('get-trending-songs/', GetTrendingView.as_view(), name='get-trending-songs'),
+    path('update-song/<uuid:songId>/', UpdateSongView.as_view(), name='update-song'),
+    path('add-song-to-album/<uuid:songId>/<uuid:albumId>/', AddSongToAlbumView.as_view(), name='add-song-to-album'),
+    path('like-song/<uuid:userId>/<uuid:songId>/', LikeSongView.as_view(), name='like-song'),
+    path('get-user-liked-songs/<uuid:userId>/', GetUserLikedSongView.as_view(), name='get-user-liked-song'),
+    path('download-song/<uuid:songId>/', DownloadSongView.as_view(), name='download-song'),
+    path('search-songs/', SearchSongsView.as_view(), name='search-songs'),
+    path('increase-song-view/<uuid:songId>/', IncreaseSongViewView.as_view(), name='increase-song-view'),
+    path('get-user-songs/<uuid:userId>/', GetUserSongs.as_view(), name='get-user-songs'),
 ]

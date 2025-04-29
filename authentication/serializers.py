@@ -1,62 +1,155 @@
 from rest_framework import serializers
-from users.models import CustomUser
+from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, FullInfoUserSerializer
+from django.shortcuts import get_object_or_404
+from Sportify_Server.services import mailService, utils
+from .models import OTP
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'password')
+        model = User
+        fields = ('username', 'email', 'password')
         extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        password = validated_data.pop("password")  # Lấy password ra khỏi validated_data
-        user = CustomUser(**validated_data)  # Tạo user nhưng chưa có password
-        user.set_password(password)  # Mã hóa password
-        user.is_staff = False  # Chặn client tự cấp quyền admin
-        user.save()  # Lưu user vào database
+    
+    def create(self, data):
+        password = data.pop("password")
+        if len(password) < 8:
+            raise serializers.ValidationError("Password is at least 8 characters.")
+       
+        user = User(
+            **data,
+            fullName=data['username']
+        )
+        user.set_password(password)
+        user.is_staff = False
+        user.save()
         
         return user
-    
-class RegisterAdminSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'password', 'is_staff')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = CustomUser(**validated_data)
-        user.is_staff = True
-        user.set_password(password)
-        user.save()
-        return user  
     
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        username = data.get("username")
-        password = data.get("password")
-
-        # Kiểm tra xem người dùng có tồn tại không
         try:
-            user = CustomUser.objects.get(username=username)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError("Sai tên đăng nhập hoặc mật khẩu.")
+            request = self.context.get('request')
+            username = data.get("username")
+            password = data.get("password")
 
-        # Kiểm tra mật khẩu
-        if not user.check_password(password):
-            raise serializers.ValidationError("Sai tên đăng nhập hoặc mật khẩu.")
+            if "@" in username:
+                user = get_object_or_404(User, email=username)
+            else:
+                user = get_object_or_404(User, username=username)
 
-        if not user.is_active:
-            raise serializers.ValidationError("Tài khoản này đã bị vô hiệu hóa.")
+            if not user.check_password(password):
+                raise serializers.ValidationError("Username or password is incorrect.")
 
-        # Tạo token JWT
+            if user.status == 'lock':
+                raise serializers.ValidationError("Account is lock.")
+
+            if user.status == 'pending':
+                code = utils.generate_OTP()
+                OTP.objects.create(
+                    user=user,
+                    code=code,
+                )
+                
+                recipient_email = user.email
+                recipient_name = user.fullName
+                sender_name = request.user.fullName
+                mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
+                
+                return {
+                    "refresh_token": None,
+                    "access_token": None,
+                    "user": UserSerializer(user).data,
+                    "isPending": True,
+                    "message": "Account is pending verification. Please check your email for the OTP."
+                }
+
+            refresh = RefreshToken.for_user(user)
+            return {
+                "refresh_token": str(refresh),
+                "access_token": str(refresh.access_token),
+                "user": FullInfoUserSerializer(user).data,
+            }
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Username or password is incorrect.")
+
+class LoginWithGoogleSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    avatarUrl = serializers.CharField()
+    fullName = serializers.CharField()
+
+    def validate(self, data):
+        email = data.get("email")
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            username = email.split("@")[0]
+            data['username'] = username
+            user = self.create(data)
+
         refresh = RefreshToken.for_user(user)
+
         return {
             "refresh_token": str(refresh),
             "access_token": str(refresh.access_token),
-            "user": UserSerializer(user).data,
+            "user": FullInfoUserSerializer(user).data,
         }
+        
+    def create(self, data):
+        password = utils.generate_password()
+        email = data.get("email")
+        username = data.get("username", email)
+       
+        user = User(**data)
+        user.set_password(password)
+        user.username = username
+        user.status = 'active'
+        user.is_staff = False
+        user.save()
+        
+        return user
+
+class ChangePasswordSerializer(serializers.Serializer):
+    currentPassword = serializers.CharField(write_only=True)
+    newPassword = serializers.CharField(write_only=True)
+    rePassword = serializers.CharField(write_only=True)
+
+    def update(self, userId, data):
+        user = get_object_or_404(User, id=userId)
+
+        currentPassword = data["currentPassword"]
+        if not user.check_password(currentPassword):
+            raise serializers.ValidationError("Password is incorrect.")
+        
+        newPassword = data["newPassword"]
+        rePassword = data["rePassword"]
+        if newPassword != rePassword:
+            raise serializers.ValidationError("Password does not match.")
+
+        user.set_password(newPassword)
+        user.save()
+        
+        return user
+    
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.CharField(write_only=True)
+    newPassword = serializers.CharField(write_only=True)
+    rePassword = serializers.CharField(write_only=True)
+
+    def update(self, data):
+        email = data["email"]
+        user = get_object_or_404(User, email=email)
+
+        newPassword = data["newPassword"]
+        rePassword = data["rePassword"]
+        if newPassword != rePassword:
+            raise serializers.ValidationError("Password does not match.")
+
+        user.set_password(newPassword)
+        user.save()
+        
+        return user

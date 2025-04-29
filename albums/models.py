@@ -3,9 +3,9 @@ import uuid
 
 class Album(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    songs = models.ManyToManyField("songs.Song", blank=True, related_name='songs_albums')
     title = models.CharField(max_length=255, null=False, blank=False)
-    description = models.CharField(max_length=255, null=False, blank=False)
-    thumbnail_id = models.UUIDField(default=uuid.uuid4)
+    releaseDate = models.DateField(auto_now_add=True)
     thumbnailUrl = models.URLField()
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -13,4 +13,4 @@ class Album(models.Model):
         db_table = "albums"
 
     def __str__(self):
-        return self.id
+        return str(self.id)
