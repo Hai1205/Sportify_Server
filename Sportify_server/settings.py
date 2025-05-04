@@ -69,7 +69,7 @@ MIDDLEWARE = [
     'Sportify_server.middlewares.JWTAuthenticationMiddleware',
 ]
 
-ASGI_APPLICATION = 'Sportify_Server.asgi.application'
+ASGI_APPLICATION = 'Sportify_server.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
