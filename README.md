@@ -33,7 +33,7 @@ Yêu cầu tiên quyết
 - MySQL (hoặc có thể cấu hình lại để dùng SQLite/PostgreSQL)
 
 Các bước cài đặt
-1. Clone repository và truy cập thư mục frontend
+1. Clone repository và truy cập thư mục backend
 ```bash
 git clone https://github.com/haole2k4/Sportify-Server.git
 cd Sportify-Server
