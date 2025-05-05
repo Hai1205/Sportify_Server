@@ -1,12 +1,11 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
-from Sportify_Server.permissions import IsArtistUser
+from Sportify_server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
-from Sportify_Server.services import AwsS3Service
+from Sportify_server.services import AwsS3Service
 from .serializers import *
 from users.serializers import *
 from .models import Song
-from albums.models import Album
-from users.models import User
+from Sportify_server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 import requests
@@ -15,6 +14,7 @@ from io import BytesIO
 from django.db.models import Q
 from rest_framework.views import APIView
 from django.db import connection
+from albums.models import Album
 
 class uploadSongView(GenericAPIView):
     permission_classes = [IsAdminUser or IsArtistUser]
