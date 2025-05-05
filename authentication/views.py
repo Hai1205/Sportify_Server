@@ -30,8 +30,9 @@ class RegisterView(GenericAPIView):
                 )
                 
                 recipient_email = userData["email"]
-                recipient_name = userData["fullName"]
-                sender_name = request.user.fullName
+                recipient_name = userData["email"]
+                print(request.user)
+                sender_name = "Sportify"
                 mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
                 
                 return JsonResponse({

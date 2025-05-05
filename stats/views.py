@@ -40,9 +40,9 @@ class getPopularSongsStatView(GenericAPIView):
 
     def get(self, request):
         try:
-            userLimit = 5
+            limit = 5
             songs = Song.objects.annotate(view_count=Count('views')) \
-                .order_by('-view_count')[:userLimit]
+                .order_by('-view_count')[:limit]
 
             serializer = FullInfoSongSerializer(songs, many=True)
             
@@ -63,10 +63,10 @@ class getTopArtistsStatView(GenericAPIView):
 
     def get(self, request):
         try:
-            userLimit = 5
+            limit = 5
             users = User.objects.filter(role="artist") \
                 .annotate(follower_count=Count('followers')) \
-                .order_by('-follower_count')[:userLimit]
+                .order_by('-follower_count')[:limit]
 
             serializer = FullInfoUserSerializer(users, many=True)
             
