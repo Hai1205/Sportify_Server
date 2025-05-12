@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.generics import GenericAPIView
 from django.http import JsonResponse
 from albums.models import Album
@@ -59,7 +59,7 @@ class getPopularSongsStatView(GenericAPIView):
             }, status=500)
             
 class getTopArtistsStatView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         try:

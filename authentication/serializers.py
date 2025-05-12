@@ -3,7 +3,7 @@ from users.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.serializers import UserSerializer, FullInfoUserSerializer
 from django.shortcuts import get_object_or_404
-from Sportify_server.services import mailService, utils
+from Sportify_Server.services import mailService, utils
 from .models import OTP
 
 class RegisterSerializer(serializers.ModelSerializer):
