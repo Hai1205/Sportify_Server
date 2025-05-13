@@ -1,192 +1,383 @@
-from rest_framework.generics import GenericAPIView
-from django.http import JsonResponse
-from django.db.models import Q
-from .models import Message
-from users.models import User
-from .serializers import MessageSerializer
-from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import ChatRoom, Message
-from .serializers import ChatRoomSerializer, MessageSerializer
-from django.db.models import Q, Max, Prefetch
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q, Max, Prefetch, Count
+from .models import Conversation, ConversationMember, Message
+from django.utils import timezone
+from .serializers import ConversationSerializer, MessageSerializer, ConversationMemberSerializer
+from users.models import User
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
-class GetAllMessageView(GenericAPIView):
-    def get(self, request):
-        try:
-            messages = Message.objects.all()
-            serializer = MessageSerializer(messages, many=True)
-        
-            return JsonResponse({
-                "status": 200,
-                "message": "Get all message successfully",
-                "messages": serializer.data
-            }, safe=False, status=200)
-        except Exception as e:
-            return JsonResponse({
-                "status": 500,
-                "message": str(e)
-            }, status=500)
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
-class getMessageView(GenericAPIView):
-    def get(self, request, senderId, receiverId):
-        try:
-            # Lấy thông số phân trang từ request
-            page = int(request.GET.get('page', 1))
-            limit = int(request.GET.get('limit', 20))
-            
-            offset = (page - 1) * limit
-            
-            sender = get_object_or_404(User, id=senderId)
-            receiver = get_object_or_404(User, id=receiverId)
-
-            # Lấy tổng số tin nhắn
-            total_count = Message.objects.filter(
-                Q(sender=sender, receiver=receiver) | Q(sender=receiver, receiver=sender)
-            ).count()
-            
-            # Query với phân trang và sắp xếp từ mới đến cũ
-            messages = Message.objects.filter(
-                Q(sender=sender, receiver=receiver) | Q(sender=receiver, receiver=sender)
-            ).order_by("-created_at")[offset:offset + limit]
-            
-            # Đảo ngược danh sách để khi hiển thị tin nhắn cũ nằm trên, mới nằm dưới
-            messages = list(reversed(messages))
-            
-            serializer = MessageSerializer(messages, many=True)
-            
-            # Trả về metadata phân trang
-            has_more = (offset + limit) < total_count
-            
-            return JsonResponse({
-                "status": 200,
-                "message": "Get message successfully",
-                "messages": serializer.data,
-                "pagination": {
-                    "page": page,
-                    "limit": limit,
-                    "total": total_count,
-                    "hasMore": has_more
-                }
-            }, safe=False, status=200)
-        except Exception as e:
-            return JsonResponse({
-                "status": 500,
-                "message": str(e)
-            }, status=500)
-
-class ChatRoomListView(APIView):
+class ConversationListView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        user = request.user
-        rooms = ChatRoom.objects.filter(members=user)
-        
-        # Prefetch members để tránh N+1 query
-        rooms = rooms.prefetch_related('members')
-        
-        # Lấy tin nhắn mới nhất cho mỗi room
-        rooms = rooms.annotate(
-            last_message_time=Max('messages__created_at')
-        ).order_by('-last_message_time')
-        
-        serializer = ChatRoomSerializer(rooms, many=True, context={'user': user})
-        return Response({'rooms': serializer.data})
-
-class ChatRoomMessagesView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, room_id):
         try:
-            room = ChatRoom.objects.get(id=room_id, members=request.user)
-        except ChatRoom.DoesNotExist:
-            return Response({'error': 'Room not found or you are not a member'}, status=status.HTTP_404_NOT_FOUND)
-        
-        messages = Message.objects.filter(chat_room=room).order_by('created_at')
-        serializer = MessageSerializer(messages, many=True)
-        return Response({'messages': serializer.data})
-
-class CreateGroupChatView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        name = request.data.get('name')
-        member_ids = request.data.get('member_ids', [])
-        
-        if not name or not member_ids:
-            return Response({'error': 'Name and member_ids are required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Thêm người tạo vào danh sách thành viên
-        if str(request.user.id) not in member_ids:
-            member_ids.append(str(request.user.id))
-        
-        try:
-            room = ChatRoom.objects.create(name=name, room_type='group')
-            for member_id in member_ids:
-                room.members.add(member_id)
+            user = request.user
             
-            serializer = ChatRoomSerializer(room, context={'user': request.user})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-class StartDirectChatView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        recipient_id = request.data.get('recipient_id')
-        
-        if not recipient_id:
-            return Response({'error': 'Recipient ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            sender = request.user
-            recipient = User.objects.get(id=recipient_id)
+            member_conversations = ConversationMember.objects.filter(
+                user=user
+            ).values_list('conversation_id', flat=True)
             
-            # Tìm hoặc tạo phòng chat trực tiếp
-            room = ChatRoom.get_or_create_direct_room(sender, recipient)
-            
-            serializer = ChatRoomSerializer(room, context={'user': request.user})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except User.DoesNotExist:
-            return Response({'error': 'Recipient not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-class GetMessageView(APIView):
-    def get(self, request, my_id, opponent_id):
-        try:
-            # Kiểm tra cả hai user có tồn tại không
-            try:
-                user1 = User.objects.get(id=my_id)
-                user2 = User.objects.get(id=opponent_id)
-            except User.DoesNotExist:
-                return Response(
-                    {"error": "One or both users do not exist"}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Lấy hoặc tạo phòng chat giữa hai người
-            chat_room = ChatRoom.get_or_create_direct_room(user1, user2)
-            
-            # Lấy tin nhắn từ phòng chat này
-            messages = Message.objects.filter(
-                chat_room=chat_room
-            ).order_by('created_at')
-            
-            serialized_messages = MessageSerializer(messages, many=True).data
-            logger.info(f"Retrieved {len(serialized_messages)} messages between {my_id} and {opponent_id}")
-            
-            return Response(serialized_messages, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Error retrieving messages: {str(e)}")
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            conversations = Conversation.objects.filter(
+                id__in=member_conversations
             )
+            
+            conversations = conversations.annotate(
+                last_message_time=Max('messages__created_at')
+            ).order_by('-last_message_time')
+            
+            conversations = conversations.annotate(
+                message_count=Count('messages')
+            )
+            
+            serializer = ConversationSerializer(
+                conversations, 
+                many=True, 
+                context={'user': user}
+            )
+            
+            return Response({
+                'status': 'success',
+                'conversations': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error listing conversations: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        print("DEBUG request.user:", request.user, request.user.is_authenticated)
+        try:
+            conversation_type = request.data.get('type', 'direct')
+            name = request.data.get('name')
+            members = request.data.get('members', [])
+            if conversation_type == 'direct':
+                if len(members) != 1:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Direct conversations require exactly one other member'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    other_user_id = members[0]
+                    other_user = User.objects.get(id=other_user_id)
+                except User.DoesNotExist:
+                    return Response({
+                        'status': 'error', 
+                        'message': 'User not found'
+                    }, status=status.HTTP_404_NOT_FOUND)
+                conversation = Conversation.get_or_create_direct_conversation(request.user, other_user)
+                
+            else:  # Group conversation
+                if not name:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Group conversations require a name'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                if not members:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Group conversations require at least one member'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                conversation = Conversation.objects.create(
+                    name=name,
+                    conversation_type='group'
+                )
+                ConversationMember.objects.create(
+                    conversation=conversation,
+                    user=request.user,
+                    role='owner'
+                )
+                for member_id in members:
+                    try:
+                        user = User.objects.get(id=member_id)
+                        if user.id != request.user.id:
+                            ConversationMember.objects.create(
+                                conversation=conversation,
+                                user=user,
+                                role='member'
+                            )
+                    except User.DoesNotExist:
+                        logger.warning(f"User with id {member_id} not found when creating conversation")
+            
+            serializer = ConversationSerializer(conversation, context={'user': request.user})
+            return Response({
+                'status': 'success',
+                'conversation': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creating conversation: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            if not ConversationMember.objects.filter(conversation=conversation, user=request.user).exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'You are not a member of this conversation'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            serializer = ConversationSerializer(conversation, context={'user': request.user})
+            return Response({
+                'status': 'success',
+                'conversation': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving conversation details: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            member = ConversationMember.objects.filter(
+                conversation=conversation, 
+                user=request.user,
+                role__in=['admin', 'owner']
+            ).first()
+            if not member:
+                return Response({
+                    'status': 'error',
+                    'message': 'You do not have permission to update this conversation'
+                }, status=status.HTTP_403_FORBIDDEN)
+            if conversation.conversation_type == 'group' and 'name' in request.data:
+                conversation.name = request.data['name']
+                conversation.save()
+            
+            serializer = ConversationSerializer(conversation, context={'user': request.user})
+            return Response({
+                'status': 'success',
+                'conversation': serializer.data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error updating conversation: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ConversationMessagesView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+    
+    def get(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            if not ConversationMember.objects.filter(conversation=conversation, user=request.user).exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'You are not a member of this conversation'
+                }, status=status.HTTP_403_FORBIDDEN)
+           
+            paginator = self.pagination_class()
+            messages = Message.objects.filter(conversation=conversation).order_by('-created_at')
+            result_page = paginator.paginate_queryset(messages, request)
+            
+            serializer = MessageSerializer(result_page, many=True)
+            
+            member = ConversationMember.objects.get(conversation=conversation, user=request.user)
+            member.last_read_at = timezone.now()
+            member.save()
+            
+            return paginator.get_paginated_response({
+                'status': 'success',
+                'messages': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error retrieving conversation messages: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            if not ConversationMember.objects.filter(conversation=conversation, user=request.user).exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'You are not a member of this conversation'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            content = request.data.get('content')
+            if not content:
+                return Response({
+                    'status': 'error',
+                    'message': 'Message content is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+            message = Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=content
+            )
+            conversation.updated_at = timezone.now()
+            conversation.save()
+            
+            serializer = MessageSerializer(message)
+            return Response({
+                'status': 'success',
+                'message': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error sending message: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ConversationMembersView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            if not ConversationMember.objects.filter(conversation=conversation, user=request.user).exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'You are not a member of this conversation'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            members = ConversationMember.objects.filter(conversation=conversation)
+            serializer = ConversationMemberSerializer(members, many=True)
+            
+            return Response({
+                'status': 'success',
+                'members': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving conversation members: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request, conversation_id):
+        try:
+            try:
+                conversation = Conversation.objects.get(id=conversation_id)
+            except Conversation.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'Conversation not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            if conversation.conversation_type == 'direct':
+                return Response({
+                    'status': 'error',
+                    'message': 'Cannot add members to direct conversations'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+            member = ConversationMember.objects.filter(
+                conversation=conversation, 
+                user=request.user,
+                role__in=['admin', 'owner']
+            ).first()
+            
+            if not member:
+                return Response({
+                    'status': 'error',
+                    'message': 'You do not have permission to add members'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            user_id = request.data.get('user_id')
+            if not user_id:
+                return Response({
+                    'status': 'error',
+                    'message': 'User ID is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+           
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({
+                    'status': 'error',
+                    'message': 'User not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            if ConversationMember.objects.filter(conversation=conversation, user=user).exists():
+                return Response({
+                    'status': 'error',
+                    'message': 'User is already a member of this conversation'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            member = ConversationMember.objects.create(
+                conversation=conversation,
+                user=user,
+                role='member'
+            )
+            
+            serializer = ConversationMemberSerializer(member)
+            return Response({
+                'status': 'success',
+                'member': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error adding conversation member: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
