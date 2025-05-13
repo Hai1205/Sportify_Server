@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User, ArtistApplication
 from albums.serializers import AlbumSerializer
 from songs.serializers import SongSerializer, FullInfoSongSerializer
-from Sportify_server.services import mailService
+from Sportify_Server.services import mailService
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

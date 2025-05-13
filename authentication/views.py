@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from users.models import User
 from .models import OTP
-from Sportify_server.services import *
+from Sportify_Server.services import *
 from rest_framework.response import Response
 from rest_framework import status
 

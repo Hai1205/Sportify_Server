@@ -9,7 +9,7 @@ from django.db.models import Q
 import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
-from Sportify_server.services import *
+from Sportify_Server.services import *
 
 class CreateUserView(GenericAPIView):
     permission_classes = [IsAdminUser] 

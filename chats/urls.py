@@ -1,7 +1,15 @@
 from django.urls import path
-from .views import GetAllMessageView, getMessageView
+
+from .views import (
+    ConversationListView,
+    ConversationDetailView,
+    ConversationMessagesView,
+    ConversationMembersView,
+)
 
 urlpatterns = [
-    path('', GetAllMessageView.as_view(), name='get-all-message'),
-    path('get-message/<uuid:senderId>/<uuid:receiverId>/', getMessageView.as_view(), name='get-message'),
+    path('conversations/', ConversationListView.as_view(), name='conversation-list'),
+    path('conversations/<uuid:conversation_id>/', ConversationDetailView.as_view(), name='conversation-detail'),
+    path('conversations/<uuid:conversation_id>/messages/', ConversationMessagesView.as_view(), name='conversation-messages'),
+    path('conversations/<uuid:conversation_id>/members/', ConversationMembersView.as_view(), name='conversation-members'),
 ]

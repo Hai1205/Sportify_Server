@@ -1,11 +1,11 @@
 from rest_framework.permissions import AllowAny, IsAdminUser
-from Sportify_server.permissions import IsArtistUser
+from Sportify_Server.permissions import IsArtistUser
 from rest_framework.generics import GenericAPIView
-from Sportify_server.services import AwsS3Service
+from Sportify_Server.services import AwsS3Service
 from .serializers import *
 from users.serializers import *
 from .models import Song
-from Sportify_server.services import AwsS3Service
+from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 import requests
