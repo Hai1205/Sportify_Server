@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
-from django.utils.timezone import now
 
 class User(AbstractUser):
     USER_ROLE_CHOICES = [
@@ -12,7 +11,7 @@ class User(AbstractUser):
     
     USER_STATUS_CHOICE = [
         ('pending', 'Pending'),
-        ('lock', 'lock'),
+        ('lock', 'Lock'),
         ('active', 'Active'),
     ]
     

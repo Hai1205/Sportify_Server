@@ -7,7 +7,7 @@ from users.serializers import *
 from .models import Song
 from Sportify_Server.services import AwsS3Service
 from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 import requests
 from mutagen.mp3 import MP3
 from io import BytesIO
@@ -15,9 +15,11 @@ from django.db.models import Q
 from rest_framework.views import APIView
 from django.db import connection
 from albums.models import Album
+import mimetypes
+import io
 
 class uploadSongView(GenericAPIView):
-    permission_classes = [IsAdminUser or IsArtistUser]
+    permission_classes = [IsArtistUser | IsAdminUser]
 
     def get_audio_duration(self, audioUrl):
         response = requests.get(audioUrl)
@@ -42,7 +44,7 @@ class uploadSongView(GenericAPIView):
             if albumId and albumId != "none":
                 album = get_object_or_404(Album, id=albumId)
 
-            if thumbnail is None or audio is None or video is None:
+            if thumbnail is None or audio is None:
                 return JsonResponse({
                     "status": 400,
                     "message": "Please upload thumbnail video and audio"
@@ -51,18 +53,26 @@ class uploadSongView(GenericAPIView):
             s3_service = AwsS3Service()
             thumbnailUrl = s3_service.save_file_to_s3(thumbnail)
             audioUrl = s3_service.save_file_to_s3(audio)
-            videoUrl = s3_service.save_file_to_s3(video)
+            
+            videoUrl = None
+            if video is not None:
+                videoUrl = s3_service.save_file_to_s3(video)
 
+            print("audioUrl:", audioUrl)
             duration = self.get_audio_duration(audioUrl)
 
-            song = Song.objects.create(
-                title=title,
-                thumbnailUrl=thumbnailUrl,
-                audioUrl=audioUrl,
-                videoUrl=videoUrl,
-                duration=duration,
-                lyrics=lyrics,
-            )
+            song_data = {
+                'title': title,
+                'thumbnailUrl': thumbnailUrl,
+                'audioUrl': audioUrl,
+                'duration': duration,
+                'lyrics': lyrics,
+            }
+            
+            if videoUrl is not None:
+                song_data['videoUrl'] = videoUrl
+
+            song = Song.objects.create(**song_data)
 
             user.songs.add(song)
             user.save()
@@ -79,6 +89,7 @@ class uploadSongView(GenericAPIView):
                 "song": serializer.data
             }, safe=False, status=200)
         except Exception as e:
+            print("Error in uploadSongView:", str(e))
             return JsonResponse({"status": 500, "message": f"Unexpected error: {str(e)}"}, status=500)
         
 class GetAllSongView(GenericAPIView):
@@ -124,26 +135,35 @@ class GetSongView(GenericAPIView):
 class DeleteSongView(GenericAPIView):
     permission_classes = [IsAdminUser | IsArtistUser]
     
-    def delete(self, request, songId):
+    def delete(self, request, songId, userId, albumId=None):
         try:
             song = get_object_or_404(Song, id=songId)
            
-            albumId = song.album_id
-            album = get_object_or_404(Album, id=albumId)
-            album.songs.remove(song)
-            album.save()
+            if albumId and albumId != "None" and albumId != "":
+                try:
+                    album = get_object_or_404(Album, id=albumId)
+                    album.songs.remove(song)
+                    album.save()
+                except:
+                    pass
             
-            userId = song.user_id
-            user = get_object_or_404(User, id=userId)
-            user.songs.remove(song)
-            user.save()
+            if userId and userId != "None":
+                user = get_object_or_404(User, id=userId)
+                user.songs.remove(song)
+                user.save()
             
-            thumbnailUrl = user.thumbnailUrl
-            audioUrl = user.audioUrl
+            thumbnailUrl = song.thumbnailUrl
+            audioUrl = song.audioUrl
+            videoUrl = song.videoUrl
             s3_service = AwsS3Service()
-            s3_service.delete_file_from_s3(thumbnailUrl)
-            s3_service.delete_file_from_s3(audioUrl)
-    
+            
+            if thumbnailUrl is not None and thumbnailUrl.strip() != "":
+                s3_service.delete_file_from_s3(thumbnailUrl)
+            if audioUrl is not None and audioUrl.strip() != "":
+                s3_service.delete_file_from_s3(audioUrl)
+            if videoUrl is not None and videoUrl.strip() != "":
+                s3_service.delete_file_from_s3(videoUrl)
+
             song.delete()
         
             return JsonResponse({
@@ -318,15 +338,35 @@ class DownloadSongView(GenericAPIView):
             
             audioUrl = song.audioUrl
             title = song.title
-            print(title)
+            
+            if not audioUrl:
+                return JsonResponse({
+                    "status": 400,
+                    "message": "Song has no audio file"
+                }, status=400)
             
             s3_service = AwsS3Service()
-            s3_service.download_file_from_s3(audioUrl, title)
-          
-            return JsonResponse({
-                "songs": 200,
-                "message": "Download song successfully", 
-            }, safe=False, status=200)
+            file_data = s3_service.download_file_from_s3(audioUrl)
+            
+            file_obj = io.BytesIO(file_data)
+            
+            extension = audioUrl.split('.')[-1].lower() if '.' in audioUrl else 'mp3'
+            content_type = mimetypes.guess_type(f"file.{extension}")[0] or 'audio/mpeg'
+            
+            filename = f"{title}.{extension}"
+            
+            response = FileResponse(file_obj, content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+
+            # return JsonResponse({
+            #     "songs": 200,
+            #     "message": "Download song successfully",
+            #     "file": file_obj,
+            #     "filename": filename
+            # }, safe=False, status=200)
+            
         except Exception as e:
             return JsonResponse({
                 "status": 500,

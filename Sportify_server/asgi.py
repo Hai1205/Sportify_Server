@@ -11,7 +11,7 @@ import os
 import django
 
 # Đặt biến môi trường
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Sportify_server.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Sportify_Server.settings')
 
 # Khởi tạo Django hoàn chỉnh TRƯỚC KHI import các model
 django.setup()

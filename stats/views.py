@@ -63,7 +63,7 @@ class getTopArtistsStatView(GenericAPIView):
 
     def get(self, request):
         try:
-            limit = 5
+            limit = 6
             users = User.objects.filter(role="artist") \
                 .annotate(follower_count=Count('followers')) \
                 .order_by('-follower_count')[:limit]

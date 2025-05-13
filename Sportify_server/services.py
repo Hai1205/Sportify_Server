@@ -93,21 +93,16 @@ class AwsS3Service:
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
 
-    def download_file_from_s3(self, file_url, local_filename):
-        from pathlib import Path
-        downloads_folder = str(Path.home() / "Downloads")
-        
-        file_path = os.path.join(downloads_folder, local_filename)
-        
-        response = requests.get(file_url, stream=True)
-        if response.status_code == 200:
-            with open(file_path, "wb") as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
-            print(f"File downloaded: {file_path}") 
-        else:
-            print("Download failed")
-            
+    def download_file_from_s3(self, file_url):
+        try:
+            response = requests.get(file_url, stream=True)
+            if response.status_code == 200:
+                return response.content
+            else:
+                raise Exception("Download failed, status code: " + str(response.status_code))
+        except Exception as e:
+            raise Exception(f"Error downloading file from S3: {str(e)}")
+
 class mailService:
     @staticmethod
     def test(order_code, order_amount, thumbnailUrl, recipient_emails):

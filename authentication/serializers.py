@@ -57,7 +57,7 @@ class LoginSerializer(serializers.Serializer):
                 
                 recipient_email = user.email
                 recipient_name = user.fullName
-                sender_name = request.user.fullName
+                sender_name = "Sportify"
                 mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
                 
                 return {

@@ -4,7 +4,8 @@ from .views import *
 urlpatterns = [
     path('', GetAllSongView.as_view(), name='get-all-song'),
     path('upload-song/<uuid:userId>/', uploadSongView.as_view(), name='upload-song'),
-    path('delete-song/<uuid:songId>/', DeleteSongView.as_view(), name='delete-song'),
+    path('delete-song/<uuid:songId>/<uuid:userId>//', DeleteSongView.as_view(), name='delete-song-without-album'),
+    path('delete-song/<uuid:songId>/<uuid:userId>/<uuid:albumId>/', DeleteSongView.as_view(), name='delete-song'),
     path('get-song/<uuid:songId>/', GetSongView.as_view(), name='get-song'),
     path('get-featured-songs/', GetFeaturedView.as_view(), name='get-featured-songs'),
     path('get-made-for-you-songs/', GetMadeForYouView.as_view(), name='get-made-for-you-songs'),

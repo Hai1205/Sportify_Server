@@ -116,7 +116,7 @@ class GetAlbumView(GenericAPIView):
 class DeleteAlbumView(GenericAPIView):
     permission_classes = [IsAdminUser | IsArtistUser ]
     
-    def delete(self, request, albumId):
+    def delete(self, request, albumId, userId):
         try:
             album = get_object_or_404(Album, id=albumId)
             
@@ -124,6 +124,11 @@ class DeleteAlbumView(GenericAPIView):
             thumbnailUrl = album.thumbnailUrl
             s3_service.delete_file_from_s3(thumbnailUrl)
             
+            if userId and userId != "None":
+                user = get_object_or_404(User, id=userId)
+                user.albums.remove(album)
+                user.save()
+                
             songs = album.songs.all()
             for song in songs:
                 s3_service.delete_file_from_s3(song.thumbnailUrl)

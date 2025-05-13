@@ -46,7 +46,7 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'rejectionReason', 'details']
 
     def update(self, application, data):
-        request = self.context.get('request')
+        # request = self.context.get('request')
         status = data.get("status") 
         details = data.get("details")
         rejectionReason = data.get("rejectionReason")
@@ -61,7 +61,7 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
             
             recipient_email = application.user.email
             recipient_name = application.user.fullName
-            sender_name = request.user.fullName
+            sender_name = "Sportify"
             mailService.mailApproveArtist(recipient_name, sender_name, recipient_email, details)
             
         if status == "reject":
@@ -71,7 +71,7 @@ class ResponseUpdateUserToArtistSerializer(serializers.ModelSerializer):
             
             recipient_email = application.user.email
             recipient_name = application.user.fullName
-            sender_name = request.user.fullName
+            sender_name = "Sportify"
             mailService.mailRejectArtist(recipient_name, sender_name, recipient_email, details, rejectionReason)
         
         application.save()

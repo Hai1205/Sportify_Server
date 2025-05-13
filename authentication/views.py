@@ -31,7 +31,6 @@ class RegisterView(GenericAPIView):
                 
                 recipient_email = userData["email"]
                 recipient_name = userData["email"]
-                print(request.user)
                 sender_name = "Sportify"
                 mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
                 
@@ -113,7 +112,7 @@ class SendOTPView(GenericAPIView):
                 
             recipient_email = user.email
             recipient_name = user.fullName
-            sender_name = request.user.fullName
+            sender_name = "Sportify"
             mailService.mailActiveAccount(code, recipient_name, sender_name, recipient_email)
 
             return JsonResponse({
@@ -132,7 +131,7 @@ class LoginView(GenericAPIView):
 
     def post(self, request):
         try:
-            serializer = LoginSerializer(data=request.data)
+            serializer = LoginSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 data = serializer.validated_data
 
@@ -312,19 +311,19 @@ class CheckArtist(GenericAPIView):
                 return JsonResponse({
                     "status": 200,
                     "message": "You are artist",
-                    "isAdmin": True
+                    "isArtist": True
                 }, safe=False, status=200)
             
             return JsonResponse({
                 "status": 200,
                 "message": "You are not artist",
-                "isAdmin": False
+                "isArtist": False
             }, safe=False, status=200)
         except Exception as e:
             return JsonResponse({
                 "status": 500,
                 "message": "You are not artist",
-                "isAdmin": False
+                "isArtist": False
             }, status=500)
 
 class ChangePasswordView(GenericAPIView):
@@ -379,9 +378,13 @@ class ResetPasswordView(GenericAPIView):
             user = get_object_or_404(User, id=userId)
             
             password = utils.generate_password()
+            
+            user.set_password(password)
+            user.save()
+            
             recipient_email = user.email
             recipient_name = user.fullName
-            sender_name = request.user.fullName
+            sender_name = "Sportify"
             mailService.mailResetPassword(recipient_email, password, recipient_name, sender_name)
 
             return Response({

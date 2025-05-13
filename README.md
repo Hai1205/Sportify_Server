@@ -18,15 +18,17 @@
 
 ## Technologies Used
 
-boto3==1.37.5                      # AWS SDK for Python
-botocore==1.37.5                   # Low-level core functionality of boto3
-channels==4.2.0                    # Django support for WebSockets and real-time features
-Django==5.1.6                      # Main web framework
-djangorestframework_simplejwt==5.5.0  # JWT Authentication for DRF
-mutagen==1.47.0                    # Audio metadata handling (e.g. MP3, FLAC tags)
-PyMySQL==1.1.1                     # MySQL client library for Python
-python-dotenv==1.1.0              # Load environment variables from .env files
-requests==2.32.3                   # HTTP requests library
+- **django-cors-headers** - Handle Cross-Origin Resource Sharing (CORS) in Django applications
+- **boto3** - AWS SDK for Python
+- **botocore** - Low-level core functionality of boto3
+- **channels** - Django support for WebSockets and real-time features
+- **Django** - Main web framework
+- **djangorestframework_simplejwt** - JWT Authentication for DRF
+- **mutagen** - Audio metadata handling (e.g. MP3, FLAC tags)
+- **PyMySQL** - MySQL client library for Python
+- **python-dotenv** - Load environment variables from .env files
+- **requests** - HTTP requests library
+- **daphne** - ASGI server for Django, enabling asynchronous communication and WebSockets.
 
 ## Installation
 
@@ -47,7 +49,7 @@ cd Sportify_Server
 
 2. Create and active virtual environment:
 
-```bash 
+```bash
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
@@ -85,8 +87,7 @@ python manage.py runserver
 ```
 
 8. Running WebSocket (ASGI):
-open other terminal window to run venv and run the following command:
-
+   open other terminal window to run venv and run the following command:
 
 ```bash
 daphne -p 8001 Sportify_Server.asgi:application
@@ -94,7 +95,7 @@ daphne -p 8001 Sportify_Server.asgi:application
 
 ## Team Members
 
-| Student ID      | Full Name         | 
-|-----------------|-------------------|
-| 3122410095      | Nguyen Hoang Hai  |
-| 3122410096      | Le Chi Hao        |
+| Student ID | Full Name        |
+| ---------- | ---------------- |
+| 3122410095 | Nguyen Hoang Hai |
+| 3122410096 | Le Chi Hao       |

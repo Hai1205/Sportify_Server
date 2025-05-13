@@ -16,6 +16,7 @@ class CreateUserView(GenericAPIView):
 
     def post(self, request):
         try:
+            print(request.data)
             serializer = CreateUserSerializer(data=request.data)
             if serializer.is_valid():
                 user = serializer.save()
@@ -27,12 +28,15 @@ class CreateUserView(GenericAPIView):
                     "message": "Create user successfully",
                     "user": full_info_serializer.data
                 }, status=200)
+            else:
+                print("Serializer errors:", serializer.errors)
+                return JsonResponse({
+                        "status": 400,
+                        "message": "Username or email already exists"
+                    }, status=400)
             
-            return JsonResponse({
-                    "status": 400,
-                    "message": "Username or email already exists"
-                }, status=400)
         except Exception as e:
+            print(str(e))
             return JsonResponse({
                 "status": 500,
                 "message": str(e)
